@@ -1,0 +1,66 @@
+﻿<Window x:Class="VoteRewards.ItemConfiguration"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:VoteRewards"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Text="VoteRewards Item Configuration" FontWeight="Bold" FontSize="16" Margin="5"/>
+
+        <DataGrid x:Name="RewardItemsDataGrid" Grid.Column="0" Grid.Row="1" AutoGenerateColumns="False" Margin="5">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Item Type ID">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding ItemTypeId}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <ComboBox 
+                        ItemsSource="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=DataContext.AvailableItemTypes}" 
+                        SelectedItem="{Binding ItemTypeId}" 
+                        SelectionChanged="ItemTypeComboBox_SelectionChanged"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Item Subtype ID">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding ItemSubtypeId}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <ComboBox x:Name="ItemSubtypeComboBox" ItemsSource="{Binding AvailableSubTypeIds}" SelectedItem="{Binding ItemSubtypeId}" />
+
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="Amount" Binding="{Binding Amount}" IsReadOnly="False" />
+                <DataGridTextColumn Header="Chance to Drop" Binding="{Binding ChanceToDrop}" IsReadOnly="False" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Column="0" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
+            <Button x:Name="AddRewardItemButton" Content="Add Item" Margin="5" Click="AddRewardItemButton_OnClick" />
+            <Button x:Name="DeleteRewardItemButton" Content="Delete Item" Margin="5" Click="DeleteRewardItemButton_OnClick" />
+            <Button Content="Save Changes" Margin="5" Click="SaveButton_OnClick"/>
+        </StackPanel>
+    </Grid>
+</Window>
