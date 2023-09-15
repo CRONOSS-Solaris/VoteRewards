@@ -1,6 +1,7 @@
 ﻿using NLog.Fluent;
 using Sandbox.Game;
 using Sandbox.Game.World;
+using Sandbox.ModAPI;
 using System;
 using System.Linq;
 using Torch;
@@ -10,6 +11,8 @@ using Torch.Commands.Permissions;
 using Torch.Managers;
 using VoteRewards.Utils;
 using VRage.Game.ModAPI;
+using VRageMath;
+
 
 namespace VoteRewards
 {
@@ -17,6 +20,8 @@ namespace VoteRewards
     {
 
         public VoteRewards Plugin => (VoteRewards)Context.Plugin;
+
+
 
         [Command("vote", "Directs the player to the voting page.")]
         [Permission(MyPromoteLevel.None)]
@@ -33,7 +38,7 @@ namespace VoteRewards
             // Otwarcie Steam Overlay z URL do głosowania
             MyVisualScriptLogicProvider.OpenSteamOverlay(steamOverlayUrl, Context.Player.Identity.IdentityId);
 
-            Context.Respond($"Please vote for us at: {voteUrl}");
+            VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Please vote for us at: {voteUrl}", Color.Green, Context.Player.SteamUserId);
         }
 
         [Command("claimreward", "Allows the player to claim their vote reward.")]
@@ -50,7 +55,7 @@ namespace VoteRewards
             }
             catch (Exception ex)
             {
-                Context.Respond("Failed to check the vote status. Please try again later.");
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to check your vote status. Please try again later.", Color.Green, Context.Player.SteamUserId);
                 VoteRewards.Log.Warn("Failed to check the vote status: " + ex.Message);
                 return;
             }
@@ -58,10 +63,10 @@ namespace VoteRewards
             switch (voteStatus)
             {
                 case -1:
-                    Context.Respond("Failed to check your vote status. Please try again later.");
+                    VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to check your vote status. Please try again later.", Color.Green, Context.Player.SteamUserId);
                     break;
                 case 0:
-                    Context.Respond("You have not voted yet. Please vote first.");
+                    VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "You have not voted yet. Please vote first.", Color.Green, Context.Player.SteamUserId);
                     break;
                 case 1:
                     RewardItem reward = Plugin.GetRandomReward();
@@ -76,29 +81,29 @@ namespace VoteRewards
                             bool rewardGranted = Plugin.AwardPlayer(steamId, reward);
                             if (rewardGranted)
                             {
-                                Context.Respond($"You received {reward.Amount} of {reward.ItemSubtypeId}. Thank you for voting!");
+                                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"You received {reward.Amount} of {reward.ItemSubtypeId}. Thank you for voting!", Color.Green, Context.Player.SteamUserId);
                                 VoteRewards.Log.Info($"Player {steamId} received {reward.Amount} of {reward.ItemSubtypeId}.");
                             }
                             else
                             {
-                                Context.Respond("Your inventory is full. Please make space to receive your reward.");
+                                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Your inventory is full. Please make space to receive your reward.", Color.Green, Context.Player.SteamUserId);
                                 VoteRewards.Log.Warn($"Player {steamId}'s inventory is full. Could not grant reward.");
                             }
                         }
                         catch (Exception ex)
                         {
-                            Context.Respond("Failed to claim the reward. Please try again later.");
+                            VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to claim the reward. Please try again later.", Color.Green, Context.Player.SteamUserId);
                             VoteRewards.Log.Warn("Failed to claim the reward: " + ex.Message);
                         }
                     }
                     else
                     {
-                        Context.Respond("No reward available at the moment. Please try again later.");
+                        VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "No reward available at the moment. Please try again later.", Color.Green, Context.Player.SteamUserId);
                         VoteRewards.Log.Warn("No reward item found for player " + steamId);
                     }
                     break;
                 case 2:
-                    Context.Respond("You have already claimed your vote reward.");
+                    VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "You have already claimed your vote reward.", Color.Green, Context.Player.SteamUserId);
                     break;
             }
         }
@@ -111,11 +116,11 @@ namespace VoteRewards
             RewardItem reward = Plugin.GetRandomReward();
             if (reward != null)
             {
-                Context.Respond($"Generated random reward: {reward.Amount} of {reward.ItemSubtypeId}");
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Generated random reward: {reward.Amount} of {reward.ItemSubtypeId}", Color.Green, Context.Player.SteamUserId);
             }
             else
             {
-                Context.Respond("No reward generated.");
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "No reward generated.", Color.Green, Context.Player.SteamUserId);
             }
         }
 
@@ -133,11 +138,11 @@ namespace VoteRewards
             bool rewardGranted = Plugin.AwardPlayer(Context.Player.SteamUserId, reward);
             if (rewardGranted)
             {
-                Context.Respond($"Successfully awarded {amount} of {itemSubtypeId}");
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Successfully awarded {amount} of {itemSubtypeId}", Color.Green, Context.Player.SteamUserId);
             }
             else
             {
-                Context.Respond($"Failed to award {amount} of {itemSubtypeId}. It is possible that the inventory is full.");
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Failed to award {amount} of {itemSubtypeId}. It is possible that the inventory is full.", Color.Green, Context.Player.SteamUserId);
             }
         }
 

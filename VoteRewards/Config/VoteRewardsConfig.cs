@@ -8,6 +8,8 @@ namespace VoteRewards
     {
         private string _serverApiKey;
         private string _votingLink;
+        private string _notificationPrefix = "Reward";
+
         public string ServerApiKey
         {
             get => _serverApiKey;
@@ -19,6 +21,13 @@ namespace VoteRewards
             get => _votingLink;
             set => SetValue(ref _votingLink, value);
         }
+
+        public string NotificationPrefix
+        {
+            get => _notificationPrefix;
+            set => SetValue(ref _notificationPrefix, value);
+        }
     }
+
 
 }

@@ -25,11 +25,14 @@ using VRage.Game.ModAPI;
 using VRage;
 using Sandbox.Game.World;
 using Sandbox.Game.Entities;
+using static VRage.Dedicated.Configurator.SelectInstanceForm;
 
 namespace VoteRewards
 {
     public class VoteRewards : TorchPluginBase, IWpfPlugin
     {
+
+        public static IChatManagerServer ChatManager => TorchBase.Instance.CurrentSession.Managers.GetManager<IChatManagerServer>();
         public static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private static readonly string CONFIG_FILE_NAME = "VoteRewardsConfig.cfg";
         private static readonly string REWARD_ITEMS_CONFIG_FILE_NAME = "RewardItemsConfig.cfg";
