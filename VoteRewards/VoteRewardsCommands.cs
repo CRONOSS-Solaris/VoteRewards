@@ -22,17 +22,16 @@ namespace VoteRewards
         [Permission(MyPromoteLevel.None)]
         public void VoteCommand()
         {
-            string serverKey = Plugin.Config.ServerApiKey;
-            string voteUrl = $"https://space-engineers.com/server/{serverKey}/vote/";
+            string voteUrl = Plugin.Config.VotingLink;
 
-            // Pobranie identyfikatora Steam gracza, który wydał komendę
-            var steamId = MySession.Static.Players.TryGetSteamId(Context.Player.IdentityId);
+            // Pobranie Steam ID gracza, który wydał komendę
+            ulong steamId = Context.Player.SteamUserId;
 
-            // Przygotuj URL w odpowiednim formacie steam://openurl/
-            string steamOverlayUrl = $"steam://openurl/{voteUrl}";
+            // Przygotuj URL z linkfilter Steam do przekierowania na stronę do głosowania
+            string steamOverlayUrl = $"https://steamcommunity.com/linkfilter/?url={voteUrl}";
 
             // Otwarcie Steam Overlay z URL do głosowania
-            MyVisualScriptLogicProvider.OpenSteamOverlay(steamOverlayUrl, (long)steamId);
+            MyVisualScriptLogicProvider.OpenSteamOverlay(steamOverlayUrl, Context.Player.Identity.IdentityId);
 
             Context.Respond($"Please vote for us at: {voteUrl}");
         }
