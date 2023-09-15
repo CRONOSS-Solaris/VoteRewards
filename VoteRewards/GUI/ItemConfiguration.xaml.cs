@@ -4,7 +4,6 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using VoteRewards.Config;
 using VoteRewards.Utils;
 
 namespace VoteRewards

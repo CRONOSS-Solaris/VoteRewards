@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Torch;
+﻿using Torch;
 
 namespace VoteRewards
 {

@@ -1,10 +1,15 @@
-﻿using System;
+﻿using NLog;
+using Sandbox.Definitions;  // Importujemy, aby móc używać MyPhysicalItemDefinition
+using Sandbox.Game.Entities;
+using Sandbox.Game.World;
+using System;
 using System.Collections.Generic;  // Importujemy, aby móc używać list
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
-using NLog;
 using Torch;
 using Torch.API;
 using Torch.API.Managers;
@@ -12,20 +17,10 @@ using Torch.API.Plugins;
 using Torch.API.Session;
 using Torch.Session;
 using VoteRewards.Config;
-using System.Windows;
-using System.Threading;
-using VRage.Game;  // Importujemy, aby móc używać MyDefinitionManager
-using Sandbox.Definitions;  // Importujemy, aby móc używać MyPhysicalItemDefinition
-using System.Linq;
 using VoteRewards.Utils;
-using VRage.Library.Utils;
-using VRage.ObjectBuilders;
-using Sandbox.ModAPI;
-using VRage.Game.ModAPI;
 using VRage;
-using Sandbox.Game.World;
-using Sandbox.Game.Entities;
-using static VRage.Dedicated.Configurator.SelectInstanceForm;
+using VRage.Game;  // Importujemy, aby móc używać MyDefinitionManager
+using VRage.ObjectBuilders;
 
 namespace VoteRewards
 {
