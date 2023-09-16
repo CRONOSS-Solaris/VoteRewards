@@ -1,69 +1,44 @@
-This project templates provides:
+EN:
 
-    .gitignore
-        - In case you are using Git for version control this file will add a blacklist
-        - It is needed to prevent unwanted files to be put under version control.
-        - Mainly the GameBinaries and TorchBinaries should never show up in there.
-        - As well as your output folders and .vs folder itself.
-        - Feel free to add additional files if you need to.
+LICENSE FOR THE VOTEREWARDS PLUGIN
 
-    manifest.xml
-        - Defines Plugin name, ID, and Version.
-        - Used for publishing on torch website.
-        - Also used for display within Torch UI, and loading through Torch.cfg
-        - After plugin is published you must not change Name and ID anymore.
-        - ID must match plugin page, so you may need to change it.
+Copyright (C) 2023 Dawid "CRONOS" Kondracki
 
-    VoteRewardsPlugin.cs
-        - Your plugins mainclass.
-        - Sets up the UI and config file.
-        - Has an example of how to listen to session state changes.
+All rights reserved.
 
-    VoteRewardsConfig.cs
-        - The model of your config file. 
-        - Even if you dont have many settings, at least something like "enable" may be useful.
-        - Deletion requires changes in other classes.
+Hereby, I grant the Rebels Games server the exclusive right to use this plugin ("VOTEREWARDS") under the following conditions:
 
-    VoteRewardsCommands.cs
-        - Excample class on how to create commands.
-        - If no commands needed, can be safely deleted.
+1. The software may only be used on the Rebels Games server.
+2. The software may not be copied, modified, distributed, or used for any purpose other than operations related to the Rebels Games server.
+3. The software may not be sold, rented, sublicensed, or otherwise transferred to third parties.
 
-    VoteRewardsControl.xaml
-        - WPF definiton of your UI
-        - Its bounds to your Config, careful of the property names.
-        - If you screw them up, Torch can and will likely crash.
-        - If no settings needed, you can also display additional information for admins.
-                - Like best practices or more advanced command descriptions.
+LIMITATION OF LIABILITY STATEMENT:
 
-    VoteRewardsControl.xaml.cs
-        - Class that binds your config to the UI.
-        - unless you add many fancy buttons or events, you likely never have to change this class.
+The software is provided "as is", without any warranty, expressed or implied, including but not limited to warranties of fitness for a particular purpose, title, or non-infringement of others' rights.
 
-After project creation
+In no event will Dawid "CRONOS" Kondracki be liable for any indirect, incidental, special, exemplary, or consequential damages (including, but not limited to, loss of profits, business interruption, or loss of business information), arising out of the use or inability to use the software, even if Dawid "CRONOS" Kondracki has been informed of the possibility of such damages.
 
-    1. Close project and run provides Setup bat.
-        - It asks for the installation directory of SE Dedicated server (can be found in torch). 
-            (Inside Torch its the DedicatedServer64 folder)
-        - It also asks for Torch root directory
-            (The folder where the Torch.Server.exe is located.)
-        - Creates a symlink to these folders.
-        - Your Plugin will use these simlinks to get the dlls of Torch and Space Engineers.
+In case of violation of this License, Dawid "CRONOS" Kondracki reserves the right to take all available legal measures to protect his rights.
 
-    2. Open your Project again and check if references are loaded correctly.
-        - If not check if simlink is set up correctly, it should be located next to your vsproj file.
 
-    3. Reformat code to your liking.
-	- Your IDE should got you covered there
+PL:
 
-    4. Rename classes to your liking.
-        - Torch does not need the class names. It figures out what to load based on their implementation.
-        - Classnames may be weird if your project name contains spaces.
-        - Avoid generic names like "Commands", because if every plugin does that logfiles may become confusing.
+LICENCJA DLA PLUGINU VOTEREWARDS
 
-    5. Compile your Project
-        - Everything should work fine
-        - Your Projects bin folder should contain your dll, pdb and manifest file.
-	- Those you can easily drop into your plugin zip. 
-	
-    6. Start coding
-        - Follow the wiki or ask on discord if you have questions or problems.
+Copyright (C) 2023 Dawid "CRONOS" Kondracki
+
+Wszelkie prawa zastrze¿one.
+
+Niniejszym przyznajê serwerowi Rebels Games wy³¹czne prawo do korzystania z niniejszego pluginu ("VOTEREWARDS") pod nastêpuj¹cymi warunkami:
+
+1. Oprogramowanie mo¿e byæ u¿ywane tylko na serwerze Rebels Games.
+2. Oprogramowania nie mo¿na kopiowaæ, modyfikowaæ, dystrybuowaæ ani u¿ywaæ w ¿adnym innym celu ni¿ operacje zwi¹zane z serwerem Rebels Games.
+3. Oprogramowania nie mo¿na sprzedawaæ, wynajmowaæ, sublicencjonowaæ ani w ¿aden inny sposób przenosiæ praw do Oprogramowania osobom trzecim.
+
+ZAŒWIADCZENIE O OGRANICZENIU ODPOWIEDZIALNOŒCI:
+
+Oprogramowanie dostarczane jest "takim, jakim jest", bez ¿adnej gwarancji, wyra¿onej lub dorozumianej, w tym, ale nie ograniczaj¹c siê do, gwarancji przydatnoœci do okreœlonego celu, tytu³u lub nie naruszenia praw innych osób.
+
+W ¿adnym wypadku Dawid "CRONOS" Kondracki nie bêdzie odpowiedzialny za jakiekolwiek szkody poœrednie, przypadkowe, szczególne, przyk³adowe czy nastêpcze (w tym, ale nie ograniczaj¹c siê do, utraty zysków, przerwania dzia³alnoœci gospodarczej, utraty informacji biznesowej), powsta³e w wyniku korzystania lub niemo¿noœci korzystania z Oprogramowania, nawet jeœli Dawid "CRONOS" Kondracki zosta³ poinformowany o mo¿liwoœci takich szkód.
+
+W przypadku naruszenia niniejszej Licencji, Dawid "CRONOS" Kondracki zastrzega sobie prawo do podjêcia wszelkich dostêpnych œrodków prawnych w celu ochrony swoich praw.
