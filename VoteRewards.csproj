@@ -149,6 +149,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="VoteRewards\Config\RewardItemsConfig.cs" />
+    <Compile Include="VoteRewards\Config\TimeSpentRewardsConfig.cs" />
+    <Compile Include="VoteRewards\GUI\TimeSpentRewardsConfiguration.xaml.cs">
+      <DependentUpon>TimeSpentRewardsConfiguration.xaml</DependentUpon>
+    </Compile>
     <Compile Include="VoteRewards\GUI\ItemConfiguration.xaml.cs">
       <DependentUpon>ItemConfiguration.xaml</DependentUpon>
     </Compile>
@@ -182,6 +186,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="VoteRewards\GUI\TimeSpentRewardsConfiguration.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="VoteRewards\GUI\ItemConfiguration.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

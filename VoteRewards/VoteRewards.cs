@@ -21,6 +21,8 @@ using VoteRewards.Utils;
 using VRage;
 using VRage.Game;  // Importujemy, aby móc używać MyDefinitionManager
 using VRage.ObjectBuilders;
+using System.Threading;
+using VRageMath;
 
 namespace VoteRewards
 {
@@ -48,6 +50,9 @@ namespace VoteRewards
         private Persistent<RewardItemsConfig> _rewardItemsConfig;
         public RewardItemsConfig RewardItemsConfig => _rewardItemsConfig?.Data;
 
+        private Persistent<TimeSpentRewardsConfig> _timeSpentRewardsConfig;
+        public TimeSpentRewardsConfig TimeSpentRewardsConfig => _timeSpentRewardsConfig?.Data;
+
         private Random _random = new Random();
 
         // Nowe listy do przechowywania dostępnych typów i podtypów przedmiotów
@@ -56,11 +61,15 @@ namespace VoteRewards
 
         private IMultiplayerManagerBase _multiplayerManager;
 
+        private Dictionary<ulong, TimeSpan> _playerTimeSpent = new Dictionary<ulong, TimeSpan>();
+        private Timer _updatePlayerTimeSpentTimer;
+
         public override void Init(ITorchBase torch)
         {
             base.Init(torch);
             SetupConfig();
             SetupRewardItemsConfig();
+            SetupTimeSpentRewardsConfig();
 
             if (Application.Current != null)
             {
@@ -74,15 +83,7 @@ namespace VoteRewards
                             _control.Loaded += Control_Loaded;
                         };
                     }
-                    else
-                    {
-                        Log.Warn("Main window is null.");
-                    }
                 });
-            }
-            else
-            {
-                Log.Warn("Application.Current is null.");
             }
 
             var sessionManager = Torch.Managers.GetManager<TorchSessionManager>();
@@ -99,6 +100,16 @@ namespace VoteRewards
             Log.Info("Control loaded successfully.");
         }
 
+        private void OnPlayerJoined(IPlayer player)
+        {
+            _playerTimeSpent[player.SteamId] = TimeSpan.Zero;
+        }
+
+        private void OnPlayerLeft(IPlayer player)
+        {
+            _playerTimeSpent.Remove(player.SteamId);
+        }
+
         private void SessionChanged(ITorchSession session, TorchSessionState state)
         {
             switch (state)
@@ -106,6 +117,7 @@ namespace VoteRewards
                 case TorchSessionState.Loaded:
                     Log.Info("Session Loaded!");
 
+                    _updatePlayerTimeSpentTimer = new Timer(UpdatePlayerTimeSpent, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
                     // Tutaj możesz zainicjować referencję do menedżera multiplayer
                     _multiplayerManager = Torch.Managers.GetManager<IMultiplayerManagerBase>();
                     if (_multiplayerManager == null)
@@ -115,6 +127,8 @@ namespace VoteRewards
                     else
                     {
                         Log.Info("Multiplayer manager initialized.");
+                        _multiplayerManager.PlayerJoined += OnPlayerJoined;
+                        _multiplayerManager.PlayerLeft += OnPlayerLeft;
                     }
 
                     LoadAvailableItemTypesAndSubtypes();
@@ -128,6 +142,42 @@ namespace VoteRewards
                     break;
             }
         }
+
+        private void UpdatePlayerTimeSpent(object state)
+        {
+
+            foreach (var player in MySession.Static.Players.GetOnlinePlayers())
+            {
+                var steamId = player.Id.SteamId;
+                if (!_playerTimeSpent.ContainsKey(steamId))
+                {
+                    _playerTimeSpent[steamId] = TimeSpan.Zero;
+                }
+
+                _playerTimeSpent[steamId] += TimeSpan.FromMinutes(1);
+
+                // Check if the player qualifies for a reward
+                if (_playerTimeSpent[steamId].TotalMinutes >= TimeSpentRewardsConfig.RewardInterval)
+                {
+                    // Award the player a reward
+                    var rewardItem = GetRandomTimeSpentReward();  // Get a random reward item
+                    if (rewardItem != null)
+                    {
+                        bool awarded = AwardPlayer(steamId, rewardItem);  // Award the player the reward
+
+                        // Send notification if the award was successful
+                        if (awarded)
+                        {
+                            ChatManager.SendMessageAsOther($"{TimeSpentRewardsConfig.NotificationPrefix}", $"Congratulations! You have received {rewardItem.Amount} of {rewardItem.ItemSubtypeId} for your time spent on the server.", Color.Green, steamId);
+                        }
+                    }
+
+                    // Reset the player's time spent
+                    _playerTimeSpent[steamId] = TimeSpan.Zero;
+                }
+            }
+        }
+
 
         private void SetupConfig()
         {
@@ -177,6 +227,42 @@ namespace VoteRewards
             }
         }
 
+        private void SetupTimeSpentRewardsConfig()
+        {
+            var configFolderPath = Path.Combine(StoragePath, "VoteReward", "Config");
+            Directory.CreateDirectory(configFolderPath);
+            var configFilePath = Path.Combine(configFolderPath, "TimeSpentRewardsConfig.cfg");
+
+            try
+            {
+                _timeSpentRewardsConfig = Persistent<TimeSpentRewardsConfig>.Load(configFilePath);
+            }
+            catch (Exception e)
+            {
+                Log.Warn(e);
+            }
+
+            if (_timeSpentRewardsConfig?.Data == null)
+            {
+                Log.Info("Creating default time spent rewards config because none was found!");
+
+                _timeSpentRewardsConfig = new Persistent<TimeSpentRewardsConfig>(configFilePath, new TimeSpentRewardsConfig());
+                _timeSpentRewardsConfig.Save();
+            }
+        }
+
+        public RewardItem GetRandomTimeSpentReward()
+        {
+            if (TimeSpentRewardsConfig.RewardsList.Count == 0)
+            {
+                return null;
+            }
+
+            int index = _random.Next(TimeSpentRewardsConfig.RewardsList.Count);
+            return TimeSpentRewardsConfig.RewardsList[index];
+        }
+
+
         public RewardItem GetRandomReward()
         {
             var rewardItemsWithChances = RewardItemsConfig.RewardItems.Select(item => new
@@ -207,10 +293,8 @@ namespace VoteRewards
             var player = MySession.Static.Players.TryGetPlayerBySteamId(steamId);
             if (player == null)
             {
-                Log.Warn($"Could not find player with SteamID {steamId}.");
                 return false;
             }
-            Log.Info($"Player found: {player.DisplayName}");
 
             // Spróbuj znaleźć definicję przedmiotu na podstawie Id przedmiotu
             MyDefinitionId definitionId = new MyDefinitionId(MyObjectBuilderType.Parse(rewardItem.ItemTypeId), rewardItem.ItemSubtypeId);
@@ -236,7 +320,6 @@ namespace VoteRewards
                 Log.Warn($"Could not get the inventory for player {player.DisplayName}.");
                 return false;
             }
-            Log.Info($"Inventory found for player {player.DisplayName}");
 
             // Sprawdź dostępność miejsca w inwentarzu
             var itemVolume = (MyFixedPoint)(rewardItem.Amount * itemDefinition.Volume);
@@ -247,7 +330,6 @@ namespace VoteRewards
 
             // Dodaj przedmiot do inwentarza gracza
             inventory.AddItems(rewardItem.Amount, physicalObject);
-            Log.Info($"Awarded {rewardItem.Amount} of {rewardItem.ItemTypeId} {rewardItem.ItemSubtypeId} to player {player.DisplayName}");
             return true; // Nagroda została przyznana
         }
 
@@ -384,5 +466,3 @@ namespace VoteRewards
 
     }
 }
-
-//koniec

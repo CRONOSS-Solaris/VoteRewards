@@ -7,7 +7,8 @@ namespace VoteRewards
     public partial class VoteRewardsControl : UserControl
     {
         private VoteRewards Plugin { get; }
-        private ItemConfiguration _itemConfigurationWindow; // Dodajemy zmienną do przechowywania instancji okna konfiguracji przedmiotów
+        private ItemConfiguration _itemConfigurationWindow;
+        private TimeSpentRewardsConfiguration _timeSpentRewardsConfigurationWindow;
 
         private VoteRewardsControl()
         {
@@ -57,6 +58,30 @@ namespace VoteRewards
             }
         }
 
+        private void OpenTimeSpentRewardsConfigurationButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_timeSpentRewardsConfigurationWindow == null)
+            {
+                Thread thread = new Thread(() =>
+                {
+                    _timeSpentRewardsConfigurationWindow = new TimeSpentRewardsConfiguration(Plugin);
+                    _timeSpentRewardsConfigurationWindow.Closed += (s, args) => _timeSpentRewardsConfigurationWindow = null;
+                    _timeSpentRewardsConfigurationWindow.Show();
+
+                    System.Windows.Threading.Dispatcher.Run();
+                });
+
+                thread.SetApartmentState(ApartmentState.STA);
+                thread.Start();
+            }
+            else
+            {
+                _timeSpentRewardsConfigurationWindow.Dispatcher.Invoke(() =>
+                {
+                    _timeSpentRewardsConfigurationWindow.Activate();
+                });
+            }
+        }
 
         public void UpdateButtonState(bool isEnabled)
         {
