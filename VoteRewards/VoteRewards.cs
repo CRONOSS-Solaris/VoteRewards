@@ -184,7 +184,7 @@ namespace VoteRewards
                         if (successfulRewards.Any())
                         {
                             // Send a single notification with all the rewards
-                            ChatManager.SendMessageAsOther($"{TimeSpentRewardsConfig.NotificationPrefixx}", $"\nCongratulations! You have received:\n{string.Join("\n", successfulRewards)}\nfor your time spent on the server.", Color.Green, steamId);
+                            ChatManager.SendMessageAsOther($"{TimeSpentRewardsConfig.NotificationPrefixx}", $"Congratulations! \nYou have received:\n{string.Join("\n", successfulRewards)}\nfor your time spent on the server.", Color.Green, steamId);
                         }
                     }
 
