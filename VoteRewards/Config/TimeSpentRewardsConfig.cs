@@ -8,7 +8,7 @@ namespace VoteRewards.Config
     {
         private int _rewardInterval = 60;  // Domyślnie ustawiamy na 60 minut
         private List<RewardItem> _rewardsList = new List<RewardItem>();
-        private string _notificationPrefix = "TimeSpentReward";
+        private string _notificationPrefixx = "TimeSpentReward";
 
         public int RewardInterval
         {
@@ -22,10 +22,10 @@ namespace VoteRewards.Config
             set => SetValue(ref _rewardsList, value);
         }
 
-        public string NotificationPrefix
+        public string NotificationPrefixx
         {
-            get => _notificationPrefix;
-            set => SetValue(ref _notificationPrefix, value);
+            get => _notificationPrefixx;
+            set => SetValue(ref _notificationPrefixx, value);
         }
     }
 }

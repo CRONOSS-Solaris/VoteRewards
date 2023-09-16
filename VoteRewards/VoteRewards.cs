@@ -145,7 +145,6 @@ namespace VoteRewards
 
         private void UpdatePlayerTimeSpent(object state)
         {
-
             foreach (var player in MySession.Static.Players.GetOnlinePlayers())
             {
                 var steamId = player.Id.SteamId;
@@ -159,16 +158,38 @@ namespace VoteRewards
                 // Check if the player qualifies for a reward
                 if (_playerTimeSpent[steamId].TotalMinutes >= TimeSpentRewardsConfig.RewardInterval)
                 {
-                    // Award the player a reward
-                    var rewardItem = GetRandomTimeSpentReward();  // Get a random reward item
-                    if (rewardItem != null)
-                    {
-                        bool awarded = AwardPlayer(steamId, rewardItem);  // Award the player the reward
+                    // Get a list of rewards (for demonstration, I'm getting three; adjust as needed)
+                    List<RewardItem> rewards = new List<RewardItem>
+            {
+                GetRandomTimeSpentReward(),
+                GetRandomTimeSpentReward(),
+                GetRandomTimeSpentReward()
+            };
 
-                        // Send notification if the award was successful
-                        if (awarded)
+                    // Remove null rewards (if any)
+                    rewards.RemoveAll(item => item == null);
+
+                    if (rewards.Any())
+                    {
+                        // Collect all the successful rewards in one place
+                        var successfulRewards = new List<string>();
+
+                        foreach (var rewardItem in rewards)
                         {
-                            ChatManager.SendMessageAsOther($"{TimeSpentRewardsConfig.NotificationPrefix}", $"Congratulations! You have received {rewardItem.Amount} of {rewardItem.ItemSubtypeId} for your time spent on the server.", Color.Green, steamId);
+                            bool awarded = AwardPlayer(steamId, rewardItem);  // Award the player the reward
+
+                            // If the award was successful, add it to the list of successful rewards
+                            if (awarded)
+                            {
+                                successfulRewards.Add($"{rewardItem.Amount}x {rewardItem.ItemSubtypeId}");
+                            }
+                        }
+
+                        // Check if any rewards were successfully awarded
+                        if (successfulRewards.Any())
+                        {
+                            // Send a single notification with all the rewards
+                            ChatManager.SendMessageAsOther($"{TimeSpentRewardsConfig.NotificationPrefixx}", $"Congratulations! You have received: {string.Join(", ", successfulRewards)} for your time spent on the server.", Color.Green, steamId);
                         }
                     }
 
@@ -265,6 +286,13 @@ namespace VoteRewards
 
         public RewardItem GetRandomReward()
         {
+            // Jeśli istnieje przedmiot z 100% szansą, zwróć go natychmiast
+            var guaranteedItem = RewardItemsConfig.RewardItems.FirstOrDefault(item => item.ChanceToDrop == 100);
+            if (guaranteedItem != null)
+            {
+                return guaranteedItem;
+            }
+
             var rewardItemsWithChances = RewardItemsConfig.RewardItems.Select(item => new
             {
                 Item = item,

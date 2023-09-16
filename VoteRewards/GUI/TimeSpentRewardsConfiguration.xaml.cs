@@ -55,7 +55,7 @@ namespace VoteRewards
         {
             // Aktualizacja konfiguracji wartościami z kontrolek
             Plugin.TimeSpentRewardsConfig.RewardInterval = int.Parse(RewardIntervalTextBox.Text);
-            Plugin.TimeSpentRewardsConfig.NotificationPrefix = NotificationPrefixTextBox.Text;
+            Plugin.TimeSpentRewardsConfig.NotificationPrefixx = NotificationPrefixTextBox.Text;
 
             // Tutaj dodaj logikę zapisywania listy nagród
 

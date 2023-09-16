@@ -31,7 +31,7 @@
         <!-- Sekcja konfiguracji prefiksu powiadomień -->
         <StackPanel Grid.Column="0" Grid.Row="1" Orientation="Horizontal" Margin="5">
             <TextBlock Text="Notification Prefix:" VerticalAlignment="Center" Margin="200,0,10,0"/>
-            <TextBox x:Name="NotificationPrefixTextBox" Width="100" Text="{Binding Path=Plugin.TimeSpentRewardsConfig.NotificationPrefix, RelativeSource={RelativeSource AncestorType=Window}}" />
+            <TextBox x:Name="NotificationPrefixTextBox" Width="100" Text="{Binding Path=Plugin.TimeSpentRewardsConfig.NotificationPrefixx, RelativeSource={RelativeSource AncestorType=Window}}" />
         </StackPanel>
 
         <!-- Tabela z nagrodami -->
