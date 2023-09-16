@@ -72,12 +72,8 @@ namespace VoteRewards
                     messages.Add("You have not voted yet. Please vote first.");
                     break;
                 case 1:
-                    List<RewardItem> rewards = new List<RewardItem>
-            {
-                Plugin.GetRandomReward(),
-                Plugin.GetRandomReward(),
-                Plugin.GetRandomReward()
-            };
+                    // Zamiast wywoływać GetRandomReward trzy razy, wywołujemy GetRandomRewards raz, aby otrzymać wszystkie nagrody
+                    List<RewardItem> rewards = Plugin.GetRandomRewards();
 
                     // Usuń null z listy nagród (jeśli jakiś przedmiot nie został wylosowany)
                     rewards.RemoveAll(item => item == null);
@@ -110,7 +106,9 @@ namespace VoteRewards
                             // Sprawdź, czy jakiekolwiek nagrody zostały przyznane
                             if (successfulRewards.Any())
                             {
-                                messages.Add($"You received: {string.Join(", ", successfulRewards)}. Thank you for voting!");
+                                messages.Add("You received:");
+                                messages.AddRange(successfulRewards.Select(reward => $"{reward}"));
+                                messages.Add("Thank you for voting!");
                             }
                             else
                             {
@@ -135,19 +133,19 @@ namespace VoteRewards
             }
 
             // Połącz wszystkie wiadomości w jedną i wyślij
-            VoteRewards.ChatManager.SendMessageAsOther(messages.First(), string.Join(" ", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
+            VoteRewards.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
         }
 
-
-
-        [Command("testgetrandomreward", "Test the GetRandomReward method.")]
+        [Command("testgetrandomreward", "Test the GetRandomRewards method.")]
         [Permission(MyPromoteLevel.Admin)]  // Ustaw na Admin, aby tylko admini mogli używać tej komendy
         public void TestGetRandomReward()
         {
-            RewardItem reward = Plugin.GetRandomReward();
-            if (reward != null)
+            List<RewardItem> rewards = Plugin.GetRandomRewards();
+
+            if (rewards.Any())
             {
-                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Generated random reward: {reward.Amount} of {reward.ItemSubtypeId}", Color.Green, Context.Player.SteamUserId);
+                var rewardDescriptions = rewards.Select(reward => $"{reward.Amount} of {reward.ItemSubtypeId}").ToList();
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Generated random rewards: {string.Join(", ", rewardDescriptions)}", Color.Green, Context.Player.SteamUserId);
             }
             else
             {

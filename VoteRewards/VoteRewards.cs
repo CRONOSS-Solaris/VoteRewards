@@ -158,13 +158,8 @@ namespace VoteRewards
                 // Check if the player qualifies for a reward
                 if (_playerTimeSpent[steamId].TotalMinutes >= TimeSpentRewardsConfig.RewardInterval)
                 {
-                    // Get a list of rewards (for demonstration, I'm getting three; adjust as needed)
-                    List<RewardItem> rewards = new List<RewardItem>
-            {
-                GetRandomTimeSpentReward(),
-                GetRandomTimeSpentReward(),
-                GetRandomTimeSpentReward()
-            };
+                    // Get a list of rewards using the updated method
+                    List<RewardItem> rewards = GetRandomTimeSpentReward();
 
                     // Remove null rewards (if any)
                     rewards.RemoveAll(item => item == null);
@@ -189,7 +184,7 @@ namespace VoteRewards
                         if (successfulRewards.Any())
                         {
                             // Send a single notification with all the rewards
-                            ChatManager.SendMessageAsOther($"{TimeSpentRewardsConfig.NotificationPrefixx}", $"Congratulations! You have received: {string.Join(", ", successfulRewards)} for your time spent on the server.", Color.Green, steamId);
+                            ChatManager.SendMessageAsOther($"{TimeSpentRewardsConfig.NotificationPrefixx}", $"\nCongratulations! You have received:\n{string.Join("\n", successfulRewards)}\nfor your time spent on the server.", Color.Green, steamId);
                         }
                     }
 
@@ -198,7 +193,6 @@ namespace VoteRewards
                 }
             }
         }
-
 
         private void SetupConfig()
         {
@@ -272,48 +266,48 @@ namespace VoteRewards
             }
         }
 
-        public RewardItem GetRandomTimeSpentReward()
+        public List<RewardItem> GetRandomTimeSpentReward()
         {
-            if (TimeSpentRewardsConfig.RewardsList.Count == 0)
+            List<RewardItem> rewardItems = new List<RewardItem>();
+
+            // Dodajemy do listy przedmioty z 100% szansą na upadek
+            rewardItems.AddRange(TimeSpentRewardsConfig.RewardsList.Where(item => item.ChanceToDrop == 100));
+
+            // Dla każdego przedmiotu z szansą mniejszą niż 100%, losujemy, czy powinien zostać zwrócony
+            var rewardItemsToConsider = TimeSpentRewardsConfig.RewardsList.Where(item => item.ChanceToDrop < 100);
+
+            foreach (var item in rewardItemsToConsider)
             {
-                return null;
+                int randomValue = _random.Next(0, 101);
+                if (randomValue <= item.ChanceToDrop)
+                {
+                    rewardItems.Add(item);
+                }
             }
 
-            int index = _random.Next(TimeSpentRewardsConfig.RewardsList.Count);
-            return TimeSpentRewardsConfig.RewardsList[index];
+            return rewardItems;
         }
 
-
-        public RewardItem GetRandomReward()
+        public List<RewardItem> GetRandomRewards()
         {
-            // Jeśli istnieje przedmiot z 100% szansą, zwróć go natychmiast
-            var guaranteedItem = RewardItemsConfig.RewardItems.FirstOrDefault(item => item.ChanceToDrop == 100);
-            if (guaranteedItem != null)
+            List<RewardItem> rewardItems = new List<RewardItem>();
+
+            // Dodajemy do listy przedmioty z 100% szansą na upadek
+            rewardItems.AddRange(RewardItemsConfig.RewardItems.Where(item => item.ChanceToDrop == 100));
+
+            // Dla każdego przedmiotu z szansą mniejszą niż 100%, losujemy, czy powinien zostać zwrócony
+            var rewardItemsToConsider = RewardItemsConfig.RewardItems.Where(item => item.ChanceToDrop < 100);
+
+            foreach (var item in rewardItemsToConsider)
             {
-                return guaranteedItem;
+                int randomValue = _random.Next(0, 101);
+                if (randomValue <= item.ChanceToDrop)
+                {
+                    rewardItems.Add(item);
+                }
             }
 
-            var rewardItemsWithChances = RewardItemsConfig.RewardItems.Select(item => new
-            {
-                Item = item,
-                RandomValue = _random.Next(0, 101)
-            }).ToList();
-
-            var selectedRewardItem = rewardItemsWithChances
-                .Where(x => x.RandomValue <= x.Item.ChanceToDrop)
-                .OrderBy(x => x.RandomValue)
-                .FirstOrDefault();
-
-            // Jeśli nie znaleziono żadnego przedmiotu, wybieramy przedmiot z drugiego największego progu szansy
-            if (selectedRewardItem == null)
-            {
-                selectedRewardItem = rewardItemsWithChances
-                    .OrderByDescending(x => x.Item.ChanceToDrop)
-                    .ThenBy(x => x.RandomValue)
-                    .FirstOrDefault();
-            }
-
-            return selectedRewardItem?.Item;
+            return rewardItems;
         }
 
         public bool AwardPlayer(ulong steamId, RewardItem rewardItem)
