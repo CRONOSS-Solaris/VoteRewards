@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Diagnostics;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -87,6 +88,16 @@ namespace VoteRewards
         {
             OpenItemConfigurationButton.IsEnabled = isEnabled;
         }
+
+        private void SupportButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            string discordInviteLink = "https://discord.gg/BUnUnXz5xJ";
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = discordInviteLink,
+                UseShellExecute = true
+            });
+        }
+
     }
 }
-//koniec

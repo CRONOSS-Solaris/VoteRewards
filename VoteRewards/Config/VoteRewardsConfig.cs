@@ -7,7 +7,9 @@ namespace VoteRewards
         private string _serverApiKey;
         private string _votingLink;
         private string _notificationPrefix = "Reward";
+        private bool _debugMode = false;
 
+        public bool DebugMode { get => _debugMode; set => SetValue(ref _debugMode, value); }
         public string ServerApiKey
         {
             get => _serverApiKey;

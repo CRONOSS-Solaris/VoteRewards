@@ -97,7 +97,7 @@ namespace VoteRewards
 
         private void Control_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
-            Log.Info("Control loaded successfully.");
+            LoggerHelper.DebugLog(Log, _config.Data, "Control loaded successfully.");
         }
 
         private void OnPlayerJoined(IPlayer player)
@@ -126,7 +126,7 @@ namespace VoteRewards
                     }
                     else
                     {
-                        Log.Info("Multiplayer manager initialized.");
+                        LoggerHelper.DebugLog(Log, _config.Data, "Multiplayer manager initialized.");
                         _multiplayerManager.PlayerJoined += OnPlayerJoined;
                         _multiplayerManager.PlayerLeft += OnPlayerLeft;
                     }
@@ -322,7 +322,7 @@ namespace VoteRewards
             MyDefinitionId definitionId = new MyDefinitionId(MyObjectBuilderType.Parse(rewardItem.ItemTypeId), rewardItem.ItemSubtypeId);
             if (!MyDefinitionManager.Static.TryGetPhysicalItemDefinition(definitionId, out var itemDefinition))
             {
-                Log.Warn($"Could not find item definition for {rewardItem.ItemTypeId} {rewardItem.ItemSubtypeId}");
+                LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): Could not find item definition for {rewardItem.ItemTypeId} {rewardItem.ItemSubtypeId}");
                 return false;
             }
 
@@ -333,13 +333,13 @@ namespace VoteRewards
             var character = player.Character;
             if (character == null)
             {
-                Log.Warn($"Player {player.DisplayName} is not spawned.");
+                LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Player {player.DisplayName} is not spawned.");
                 return false;
             }
             var inventory = character.GetInventory();
             if (inventory == null)
             {
-                Log.Warn($"Could not get the inventory for player {player.DisplayName}.");
+                LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Could not get the inventory for player {player.DisplayName}.");
                 return false;
             }
 
@@ -385,12 +385,12 @@ namespace VoteRewards
                 }
                 catch (HttpRequestException e)
                 {
-                    Log.Warn("Network error while contacting the API: " + e.Message);
+                    LoggerHelper.DebugLog(Log, _config.Data, "API(): Network error while contacting the API: " + e.Message);
                     return -1;
                 }
 
                 string responseContent = await response.Content.ReadAsStringAsync();
-                Log.Info($"API Response: {responseContent}");
+                LoggerHelper.DebugLog(Log, _config.Data, $"API(): API Response: {responseContent}");
 
                 if (responseContent.Contains("Error"))
                 {
@@ -422,22 +422,22 @@ namespace VoteRewards
                 }
                 catch (HttpRequestException e)
                 {
-                    Log.Warn("Network error while contacting the API: " + e.Message);
+                    LoggerHelper.DebugLog(Log, _config.Data, "API(): Network error while contacting the API: " + e.Message);
                     throw;
                 }
 
                 string responseContent = await response.Content.ReadAsStringAsync();
-                Log.Info($"API Response for setting vote as claimed: {responseContent}");
+                LoggerHelper.DebugLog(Log, _config.Data, $"API(): API Response for setting vote as claimed: {responseContent}");
 
                 if (responseContent.Contains("Error"))
                 {
-                    Log.Warn($"API responded with an error while setting vote as claimed: {responseContent}");
+                    LoggerHelper.DebugLog(Log, _config.Data, $"API(): API responded with an error while setting vote as claimed: {responseContent}");
                     throw new Exception("API responded with an error.");
                 }
 
                 if (responseContent.Trim() != "1")
                 {
-                    Log.Warn("Failed to set the vote as claimed");
+                    LoggerHelper.DebugLog(Log, _config.Data, "API(): Failed to set the vote as claimed");
                     throw new Exception("Failed to set the vote as claimed");
                 }
             }
@@ -452,7 +452,7 @@ namespace VoteRewards
                 string typeId = definition.Id.TypeId.ToString();
                 string subtypeId = definition.Id.SubtypeId.String;
 
-                Log.Info($"Loading item: TypeId={typeId}, SubtypeId={subtypeId}");
+                LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): Loading item: TypeId={typeId}, SubtypeId={subtypeId}");
 
                 if (!AvailableItemTypes.Contains(typeId))
                 {
@@ -479,10 +479,10 @@ namespace VoteRewards
                 }
             }
 
-            Log.Info($"Loaded {AvailableItemTypes.Count} item types and {AvailableItemSubtypes.Count} item subtypes.");
+            LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): Loaded {AvailableItemTypes.Count} item types and {AvailableItemSubtypes.Count} item subtypes.");
             foreach (var kvp in AvailableItemSubtypes)
             {
-                Log.Info($"Type: {kvp.Key}, Subtypes: {string.Join(", ", kvp.Value)}");
+                LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): Type: {kvp.Key}, Subtypes: {string.Join(", ", kvp.Value)}");
             }
         }
 

@@ -156,6 +156,7 @@
     <Compile Include="VoteRewards\GUI\ItemConfiguration.xaml.cs">
       <DependentUpon>ItemConfiguration.xaml</DependentUpon>
     </Compile>
+    <Compile Include="VoteRewards\Utils\LoggerHelper.cs" />
     <Compile Include="VoteRewards\Utils\RewardItem.cs" />
     <Compile Include="VoteRewards\GUI\VoteRewardsControl.xaml.cs">
       <DependentUpon>VoteRewardsControl.xaml</DependentUpon>
@@ -187,6 +188,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="VoteRewards\GUI\Styles.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="VoteRewards\GUI\TimeSpentRewardsConfiguration.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

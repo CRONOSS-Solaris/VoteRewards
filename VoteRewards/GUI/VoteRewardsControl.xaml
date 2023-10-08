@@ -7,12 +7,70 @@
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800">
 
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <SolidColorBrush x:Key="TextBox.Static.Border" Color="#FFABAdB3"/>
+            <SolidColorBrush x:Key="TextBox.MouseOver.Border" Color="#FF7EB4EA"/>
+            <SolidColorBrush x:Key="TextBox.Focus.Border" Color="#FF569DE5"/>
+            <Style x:Key="TextBoxStyle1" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource TextBox.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" SnapsToDevicePixels="True" Cursor="" CornerRadius="8,8,8,8" BorderThickness="2,2,2,2">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource TextBox.MouseOver.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource TextBox.Focus.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+            
+        </ResourceDictionary>
+    </UserControl.Resources>
+
     <Grid>
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" SharedSizeGroup="Labels"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto" SharedSizeGroup="Buttons"/>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="SupportButton"/>
+            <!-- Nowa kolumna dla przycisku SUPPORT -->
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -26,17 +84,20 @@
         <TextBlock Grid.Column="0" Grid.Row ="0" VerticalAlignment="Center" Text="VoteRewards" FontWeight="Bold" FontSize="16" Grid.ColumnSpan="2" Margin="5"/>
 
         <TextBlock Grid.Column="0" Grid.Row ="1" VerticalAlignment="Center" Text="Server API Key" Margin="5"/>
-        <TextBox Name="ServerApiKey" Grid.Column="1" Grid.Row ="1" Margin="5,5,5,5" Text="{Binding ServerApiKey}"/>
+        <TextBox Style="{DynamicResource TextBoxStyle1}" Name="ServerApiKey" Grid.Column="1" Grid.Row ="1" Margin="5,5,5,5" Text="{Binding ServerApiKey}"/>
 
         <TextBlock Grid.Column="0" Grid.Row ="2" VerticalAlignment="Center" Text="Voting Link" Margin="5"/>
-        <TextBox Name="VotingLinkTextBox" Grid.Column="1" Grid.Row="2" Margin="5,5,5,5" Width="525" Height="25" Text="{Binding VotingLink}"/>
+        <TextBox Style="{DynamicResource TextBoxStyle1}" Name="VotingLinkTextBox" Grid.Column="1" Grid.Row="2" Margin="5,5,5,5" Height="25" Text="{Binding VotingLink}"/>
 
         <TextBlock Grid.Column="0" Grid.Row ="3" VerticalAlignment="Center" Text="Notification Prefix" Margin="5"/>
-        <TextBox Name="NotificationPrefixTextBox" Grid.Column="1" Grid.Row="3" Margin="5,5,5,5" Width="525" Height="25" Text="{Binding NotificationPrefix}"/>
+        <TextBox Style="{DynamicResource TextBoxStyle1}" Name="NotificationPrefixTextBox" Grid.Column="1" Grid.Row="3" Margin="5,5,5,5" Height="25" Text="{Binding NotificationPrefix}"/>
 
-        <Button Grid.Column="2" Grid.Row="4" Content="Save Config" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Width="150" Height="25" Click="SaveButton_OnClick"></Button>
+        <Button Style="{StaticResource ButtonStyle1}" Grid.Column="2" Grid.Row="4" Content="Save Config" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Width="150" Height="25" Click="SaveButton_OnClick"></Button>
 
-        <Button Grid.Column="3" Grid.Row="1" x:Name="OpenItemConfigurationButton" Content="Open Item Configuration" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Width="150" Height="25" Click="OpenItemConfigurationButton_Click"/>
-        <Button Grid.Column="3" Grid.Row="2" x:Name="OpenTimeSpentRewardsConfigurationButton" Content="Open Time Spent Rewards" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Width="150" Height="25" Click="OpenTimeSpentRewardsConfigurationButton_Click" />
+        <!-- Nowy przycisk SUPPORT -->
+        <Button Style="{StaticResource ButtonStyle1}" Grid.Column="3" Grid.Row="4" Content="SUPPORT" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Width="150" Height="25" Click="SupportButton_OnClick"/>
+
+        <Button Style="{StaticResource ButtonStyle1}" Grid.Column="3" Grid.Row="1" x:Name="OpenItemConfigurationButton" Content="Open Item Configuration" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Width="150" Height="25" Click="OpenItemConfigurationButton_Click"/>
+        <Button Style="{StaticResource ButtonStyle1}" Grid.Column="3" Grid.Row="2" x:Name="OpenTimeSpentRewardsConfigurationButton" Content="Open Time Spent Rewards" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Width="150" Height="25" Click="OpenTimeSpentRewardsConfigurationButton_Click" />
     </Grid>
 </UserControl>

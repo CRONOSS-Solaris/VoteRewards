@@ -7,6 +7,14 @@
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800">
 
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -58,9 +66,9 @@
         </DataGrid>
 
         <StackPanel Grid.Column="0" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
-            <Button x:Name="AddRewardItemButton" Content="Add Item" Margin="5" Click="AddRewardItemButton_OnClick" />
-            <Button x:Name="DeleteRewardItemButton" Content="Delete Item" Margin="5" Click="DeleteRewardItemButton_OnClick" />
-            <Button Content="Save Changes" Margin="5" Click="SaveButton_OnClick"/>
+            <Button Style="{StaticResource ButtonStyle1}" x:Name="AddRewardItemButton" Content="Add Item" Margin="5" Width="100" Click="AddRewardItemButton_OnClick" />
+            <Button Style="{StaticResource ButtonStyle1}" x:Name="DeleteRewardItemButton" Content="Delete Item" Margin="5" Width="100" Click="DeleteRewardItemButton_OnClick" />
+            <Button Style="{StaticResource ButtonStyle1}" Content="Save Changes" Margin="5" Width="100" Click="SaveButton_OnClick"/>
         </StackPanel>
     </Grid>
 </Window>
