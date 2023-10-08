@@ -87,6 +87,8 @@ namespace VoteRewards
         public void UpdateButtonState(bool isEnabled)
         {
             OpenItemConfigurationButton.IsEnabled = isEnabled;
+            OpenTimeSpentRewardsConfigurationButton.IsEnabled = isEnabled;
+            ServerStatusMessage.Visibility = isEnabled ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void SupportButton_OnClick(object sender, RoutedEventArgs e)

@@ -181,6 +181,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="app.config" />
     <None Include="LICENSE" />
     <None Include="VoteRewards\Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

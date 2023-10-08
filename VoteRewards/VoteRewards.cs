@@ -132,6 +132,7 @@ namespace VoteRewards
                     }
 
                     LoadAvailableItemTypesAndSubtypes();
+                    _control.Dispatcher.Invoke(() => _control.UpdateButtonState(true));
                     break;
 
                 case TorchSessionState.Unloading:
@@ -139,6 +140,7 @@ namespace VoteRewards
 
                     // Ustawienie menedżera na null podczas rozładowywania sesji
                     _multiplayerManager = null;
+                    _control.Dispatcher.Invoke(() => _control.UpdateButtonState(false));
                     break;
             }
         }
