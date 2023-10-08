@@ -12,6 +12,54 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <SolidColorBrush x:Key="TextBox.Static.Border" Color="#FFABAdB3"/>
+            <SolidColorBrush x:Key="TextBox.MouseOver.Border" Color="#FF7EB4EA"/>
+            <SolidColorBrush x:Key="TextBox.Focus.Border" Color="#FF569DE5"/>
+            <Style x:Key="TextBoxStyle1" TargetType="{x:Type TextBox}">
+                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource TextBox.Static.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="KeyboardNavigation.TabNavigation" Value="None"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="AllowDrop" Value="true"/>
+                <Setter Property="ScrollViewer.PanningMode" Value="VerticalFirst"/>
+                <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type TextBox}">
+                            <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" SnapsToDevicePixels="True" Cursor="" CornerRadius="8,8,8,8" BorderThickness="2,2,2,2">
+                                <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="false">
+                                    <Setter Property="Opacity" TargetName="border" Value="0.56"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource TextBox.MouseOver.Border}"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                    <Setter Property="BorderBrush" TargetName="border" Value="{StaticResource TextBox.Focus.Border}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <MultiTrigger>
+                        <MultiTrigger.Conditions>
+                            <Condition Property="IsInactiveSelectionHighlightEnabled" Value="true"/>
+                            <Condition Property="IsSelectionActive" Value="false"/>
+                        </MultiTrigger.Conditions>
+                        <Setter Property="SelectionBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                    </MultiTrigger>
+                </Style.Triggers>
+            </Style>
+
         </ResourceDictionary>
     </Window.Resources>
 
@@ -31,15 +79,15 @@
         <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Text="Time Spent Rewards Configuration" FontWeight="Bold" FontSize="16" Margin="5"/>
 
         <!-- Sekcja konfiguracji interwału nagród -->
-        <StackPanel Grid.Column="0" Grid.Row="1" Orientation="Horizontal" Margin="5">
+        <StackPanel Grid.Column="0" Grid.Row="1" Orientation="Horizontal" Margin="3">
             <TextBlock Text="Reward Interval (minutes):" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <TextBox x:Name="RewardIntervalTextBox" Width="50" Text="{Binding Path=Plugin.TimeSpentRewardsConfig.RewardInterval, RelativeSource={RelativeSource AncestorType=Window}}" />
+            <TextBox Style="{DynamicResource TextBoxStyle1}" x:Name="RewardIntervalTextBox" Width="100" Text="{Binding Path=Plugin.TimeSpentRewardsConfig.RewardInterval, RelativeSource={RelativeSource AncestorType=Window}}" />
         </StackPanel>
 
         <!-- Sekcja konfiguracji prefiksu powiadomień -->
-        <StackPanel Grid.Column="0" Grid.Row="1" Orientation="Horizontal" Margin="5">
-            <TextBlock Text="Notification Prefix:" VerticalAlignment="Center" Margin="200,0,10,0"/>
-            <TextBox x:Name="NotificationPrefixTextBox" Width="100" Text="{Binding Path=Plugin.TimeSpentRewardsConfig.NotificationPrefixx, RelativeSource={RelativeSource AncestorType=Window}}" />
+        <StackPanel Grid.Column="0" Grid.Row="1" Orientation="Horizontal" Margin="3">
+            <TextBlock Text="Notification Prefix:" VerticalAlignment="Center" Margin="260,0,10,0"/>
+            <TextBox Style="{DynamicResource TextBoxStyle1}" x:Name="NotificationPrefixTextBox" Width="150" Text="{Binding Path=Plugin.TimeSpentRewardsConfig.NotificationPrefixx, RelativeSource={RelativeSource AncestorType=Window}}" />
         </StackPanel>
 
         <!-- Tabela z nagrodami -->
