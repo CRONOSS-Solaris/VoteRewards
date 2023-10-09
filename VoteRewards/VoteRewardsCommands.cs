@@ -1,4 +1,5 @@
-﻿using NLog.Fluent;
+﻿using NLog;
+using NLog.Fluent;
 using Sandbox.Game;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
@@ -21,8 +22,6 @@ namespace VoteRewards
     {
 
         public VoteRewards Plugin => (VoteRewards)Context.Plugin;
-
-
 
         [Command("vote", "Directs the player to the voting page.")]
         [Permission(MyPromoteLevel.None)]
@@ -52,7 +51,8 @@ namespace VoteRewards
             int voteStatus;
             try
             {
-                voteStatus = await Plugin.CheckVoteStatusAsync(steamId.ToString());
+                voteStatus = await Plugin.ApiHelper.CheckVoteStatusAsync(steamId.ToString());
+
             }
             catch (Exception ex)
             {
@@ -83,7 +83,7 @@ namespace VoteRewards
                         try
                         {
                             // Mark the vote as claimed
-                            await Plugin.SetVoteAsClaimedAsync(steamId);
+                            await Plugin.ApiHelper.SetVoteAsClaimedAsync(steamId);
 
                             // Zbierz wszystkie udane nagrody w jednym miejscu
                             var successfulRewards = new List<string>();
@@ -91,7 +91,7 @@ namespace VoteRewards
                             foreach (var reward in rewards)
                             {
                                 // Spróbuj przyznać nagrodę graczowi
-                                bool rewardGranted = Plugin.AwardPlayer(steamId, reward);
+                                bool rewardGranted = Plugin.AwardPlayer(Context.Player.SteamUserId, reward);
                                 if (rewardGranted)
                                 {
                                     successfulRewards.Add($"{reward.Amount}x {reward.ItemSubtypeId}");

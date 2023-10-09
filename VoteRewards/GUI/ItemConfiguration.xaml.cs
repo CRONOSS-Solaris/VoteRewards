@@ -56,6 +56,7 @@ namespace VoteRewards
         {
             // Zapisujemy konfigurację
             Plugin.Save();
+            this.Close();
         }
 
         private void ItemTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

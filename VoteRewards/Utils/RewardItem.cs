@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Xml.Serialization;
 
 namespace VoteRewards.Utils
 {
@@ -8,7 +9,8 @@ namespace VoteRewards.Utils
         public string ItemSubtypeId { get; set; }
         public int Amount { get; set; }
         public double ChanceToDrop { get; set; }
-
+        
+        [XmlIgnore]
         public List<string> AvailableSubTypeIds { get; set; } = new List<string>();
 
         public RewardItem()

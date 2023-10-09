@@ -60,6 +60,7 @@ namespace VoteRewards
             // Tutaj dodaj logikę zapisywania listy nagród
 
             Plugin.Save();
+            this.Close();
         }
 
 
