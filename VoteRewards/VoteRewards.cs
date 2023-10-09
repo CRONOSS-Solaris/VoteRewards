@@ -23,6 +23,7 @@ using VRage.Game;  // Importujemy, aby móc używać MyDefinitionManager
 using VRage.ObjectBuilders;
 using System.Threading;
 using VRageMath;
+using VRage.Plugins;
 
 namespace VoteRewards
 {
@@ -34,7 +35,6 @@ namespace VoteRewards
         private static readonly string CONFIG_FILE_NAME = "VoteRewardsConfig.cfg";
         private static readonly string REWARD_ITEMS_CONFIG_FILE_NAME = "RewardItemsConfig.cfg";
         public VoteApiHelper ApiHelper { get; private set; }
-        private RewardManager _rewardManager;
 
 
         private VoteRewardsControl _control;
@@ -74,7 +74,6 @@ namespace VoteRewards
             _rewardItemsConfig = SetupConfig(REWARD_ITEMS_CONFIG_FILE_NAME, new RewardItemsConfig());
             _timeSpentRewardsConfig = SetupConfig("TimeSpentRewardsConfig.cfg", new TimeSpentRewardsConfig());
             ApiHelper = new VoteApiHelper(Config.ServerApiKey);
-            _rewardManager = new RewardManager(this);
 
 
             if (Application.Current != null)
@@ -167,7 +166,7 @@ namespace VoteRewards
                 if (_playerTimeSpent[steamId].TotalMinutes >= TimeSpentRewardsConfig.RewardInterval)
                 {
                     // Get a list of rewards using the updated method
-                    List<RewardItem> rewards = _rewardManager.GetRandomTimeSpentReward();
+                    List<RewardItem> rewards = GetRandomTimeSpentReward();
 
                     // Remove null rewards (if any)
                     rewards.RemoveAll(item => item == null);
@@ -179,7 +178,7 @@ namespace VoteRewards
 
                         foreach (var rewardItem in rewards)
                         {
-                            bool awarded = _rewardManager.AwardPlayer(steamId, rewardItem);  // Award the player the reward
+                            bool awarded = AwardPlayer(steamId, rewardItem);  // Award the player the reward
 
                             // If the award was successful, add it to the list of successful rewards
                             if (awarded)
@@ -246,6 +245,88 @@ namespace VoteRewards
             }
         }
 
+        public List<RewardItem> GetRandomRewardsFromList(List<RewardItem> rewardsList)
+        {
+            List<RewardItem> rewardItems = new List<RewardItem>();
+
+            // Dodajemy do listy przedmioty z 100% szansą na upadek
+            rewardItems.AddRange(rewardsList.Where(item => item.ChanceToDrop == 100));
+
+            // Dla każdego przedmiotu z szansą mniejszą niż 100%, losujemy, czy powinien zostać zwrócony
+            var rewardItemsToConsider = rewardsList.Where(item => item.ChanceToDrop < 100);
+            foreach (var item in rewardItemsToConsider)
+            {
+                int randomValue = _random.Next(0, 101);
+                if (randomValue <= item.ChanceToDrop)
+                {
+                    rewardItems.Add(item);
+                }
+            }
+
+            return rewardItems;
+        }
+
+        public List<RewardItem> GetRandomTimeSpentReward()
+        {
+            return GetRandomRewardsFromList(TimeSpentRewardsConfig.RewardsList);
+        }
+
+        public List<RewardItem> GetRandomRewards()
+        {
+            if (RewardItemsConfig == null || RewardItemsConfig.RewardItems == null)
+            {
+                Log.Error("Error: One or more required properties are null in RewardManager. Cannot proceed.");
+                return null;
+            }
+
+            return GetRandomRewardsFromList(RewardItemsConfig.RewardItems);
+        }
+
+
+        public bool AwardPlayer(ulong steamId, RewardItem rewardItem)
+        {
+            var player = MySession.Static.Players.TryGetPlayerBySteamId(steamId);
+            if (player == null)
+            {
+                return false;
+            }
+
+            // Spróbuj znaleźć definicję przedmiotu na podstawie Id przedmiotu
+            MyDefinitionId definitionId = new MyDefinitionId(MyObjectBuilderType.Parse(rewardItem.ItemTypeId), rewardItem.ItemSubtypeId);
+            if (!MyDefinitionManager.Static.TryGetPhysicalItemDefinition(definitionId, out var itemDefinition))
+            {
+                LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): Could not find item definition for {rewardItem.ItemTypeId} {rewardItem.ItemSubtypeId}");
+                return false;
+            }
+
+            // Stwórz nowy przedmiot używając definicji przedmiotu i ilości
+            MyObjectBuilder_PhysicalObject physicalObject = MyObjectBuilderSerializer.CreateNewObject(definitionId) as MyObjectBuilder_PhysicalObject;
+
+            // Get the character's inventory
+            var character = player.Character;
+            if (character == null)
+            {
+                LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Player {player.DisplayName} is not spawned.");
+                return false;
+            }
+            var inventory = character.GetInventory();
+            if (inventory == null)
+            {
+                LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Could not get the inventory for player {player.DisplayName}.");
+                return false;
+            }
+
+            // Sprawdź dostępność miejsca w inwentarzu
+            var itemVolume = (MyFixedPoint)(rewardItem.Amount * itemDefinition.Volume);
+            if (inventory.CurrentVolume + itemVolume > inventory.MaxVolume)
+            {
+                return false; // Nie ma wystarczająco miejsca w inwentarzu
+            }
+
+            // Dodaj przedmiot do inwentarza gracza
+            inventory.AddItems(rewardItem.Amount, physicalObject);
+            return true; // Nagroda została przyznana
+        }
 
         // Nowa metoda do ładowania dostępnych typów i podtypów przedmiotów
         private void LoadAvailableItemTypesAndSubtypes()
