@@ -21,7 +21,7 @@ namespace VoteRewards
     {
 
         public VoteRewards Plugin => (VoteRewards)Context.Plugin;
-
+        private RewardManager _rewardManager;
 
 
         [Command("vote", "Directs the player to the voting page.")]
@@ -74,7 +74,7 @@ namespace VoteRewards
                     break;
                 case 1:
                     // Zamiast wywoływać GetRandomReward trzy razy, wywołujemy GetRandomRewards raz, aby otrzymać wszystkie nagrody
-                    List<RewardItem> rewards = Plugin.GetRandomRewards();
+                    List<RewardItem> rewards = _rewardManager.GetRandomRewards();
 
                     // Usuń null z listy nagród (jeśli jakiś przedmiot nie został wylosowany)
                     rewards.RemoveAll(item => item == null);
@@ -92,7 +92,7 @@ namespace VoteRewards
                             foreach (var reward in rewards)
                             {
                                 // Spróbuj przyznać nagrodę graczowi
-                                bool rewardGranted = Plugin.AwardPlayer(steamId, reward);
+                                bool rewardGranted = _rewardManager.AwardPlayer(Context.Player.SteamUserId, reward);
                                 if (rewardGranted)
                                 {
                                     successfulRewards.Add($"{reward.Amount}x {reward.ItemSubtypeId}");
@@ -141,7 +141,7 @@ namespace VoteRewards
         [Permission(MyPromoteLevel.Admin)]  // Ustaw na Admin, aby tylko admini mogli używać tej komendy
         public void TestGetRandomReward()
         {
-            List<RewardItem> rewards = Plugin.GetRandomRewards();
+            List<RewardItem> rewards = _rewardManager.GetRandomRewards();
 
             if (rewards.Any())
             {
@@ -165,7 +165,7 @@ namespace VoteRewards
                 Amount = amount
             };
 
-            bool rewardGranted = Plugin.AwardPlayer(Context.Player.SteamUserId, reward);
+            bool rewardGranted = _rewardManager.AwardPlayer(Context.Player.SteamUserId, reward);
             if (rewardGranted)
             {
                 VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Successfully awarded {amount} of {itemSubtypeId}", Color.Green, Context.Player.SteamUserId);
