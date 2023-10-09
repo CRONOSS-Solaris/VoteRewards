@@ -192,6 +192,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="VoteRewards\Utils\VoteApiHelper.cs" />
     <Compile Include="VoteRewards\VoteRewardsCommands.cs" />
     <Compile Include="VoteRewards\Config\VoteRewardsConfig.cs" />
     <Compile Include="VoteRewards\VoteRewards.cs" />

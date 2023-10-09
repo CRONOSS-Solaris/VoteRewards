@@ -33,6 +33,8 @@ namespace VoteRewards
         public static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private static readonly string CONFIG_FILE_NAME = "VoteRewardsConfig.cfg";
         private static readonly string REWARD_ITEMS_CONFIG_FILE_NAME = "RewardItemsConfig.cfg";
+        public VoteApiHelper ApiHelper { get; private set; }
+
 
         private VoteRewardsControl _control;
         public UserControl GetControl()
@@ -70,6 +72,7 @@ namespace VoteRewards
             _config = SetupConfig(CONFIG_FILE_NAME, new VoteRewardsConfig());
             _rewardItemsConfig = SetupConfig(REWARD_ITEMS_CONFIG_FILE_NAME, new RewardItemsConfig());
             _timeSpentRewardsConfig = SetupConfig("TimeSpentRewardsConfig.cfg", new TimeSpentRewardsConfig());
+            ApiHelper = new VoteApiHelper(Config.ServerApiKey);
 
 
             if (Application.Current != null)
@@ -315,79 +318,6 @@ namespace VoteRewards
             catch (IOException e)
             {
                 Log.Warn(e, "Configuration failed to save");
-            }
-        }
-
-        public async Task<int> CheckVoteStatusAsync(string steamId)
-        {
-            string serverKey = Config.ServerApiKey;
-            string apiUrl = $"https://space-engineers.com/api/?object=votes&element=claim&key={serverKey}&steamid={steamId}";
-
-            using (HttpClient client = new HttpClient())
-            {
-                HttpResponseMessage response;
-
-                try
-                {
-                    response = await client.GetAsync(apiUrl);
-                }
-                catch (HttpRequestException e)
-                {
-                    LoggerHelper.DebugLog(Log, _config.Data, "API(): Network error while contacting the API: " + e.Message);
-                    return -1;
-                }
-
-                string responseContent = await response.Content.ReadAsStringAsync();
-                LoggerHelper.DebugLog(Log, _config.Data, $"API(): API Response: {responseContent}");
-
-                if (responseContent.Contains("Error"))
-                {
-                    Log.Warn($"API responded with an error: {responseContent}");
-                    return -1;
-                }
-
-                if (!int.TryParse(responseContent, out int voteStatus))
-                {
-                    Log.Warn("Failed to parse API response");
-                    return -1;
-                }
-
-                return voteStatus;
-            }
-        }
-
-        public async Task SetVoteAsClaimedAsync(ulong steamId)
-        {
-            string serverKey = Config.ServerApiKey;
-            string apiUrl = $"https://space-engineers.com/api/?action=post&object=votes&element=claim&key={serverKey}&steamid={steamId}";
-
-            using (HttpClient client = new HttpClient())
-            {
-                HttpResponseMessage response;
-                try
-                {
-                    response = await client.GetAsync(apiUrl);
-                }
-                catch (HttpRequestException e)
-                {
-                    LoggerHelper.DebugLog(Log, _config.Data, "API(): Network error while contacting the API: " + e.Message);
-                    throw;
-                }
-
-                string responseContent = await response.Content.ReadAsStringAsync();
-                LoggerHelper.DebugLog(Log, _config.Data, $"API(): API Response for setting vote as claimed: {responseContent}");
-
-                if (responseContent.Contains("Error"))
-                {
-                    LoggerHelper.DebugLog(Log, _config.Data, $"API(): API responded with an error while setting vote as claimed: {responseContent}");
-                    throw new Exception("API responded with an error.");
-                }
-
-                if (responseContent.Trim() != "1")
-                {
-                    LoggerHelper.DebugLog(Log, _config.Data, "API(): Failed to set the vote as claimed");
-                    throw new Exception("Failed to set the vote as claimed");
-                }
             }
         }
 

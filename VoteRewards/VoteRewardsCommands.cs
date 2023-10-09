@@ -52,7 +52,8 @@ namespace VoteRewards
             int voteStatus;
             try
             {
-                voteStatus = await Plugin.CheckVoteStatusAsync(steamId.ToString());
+                voteStatus = await Plugin.ApiHelper.CheckVoteStatusAsync(steamId.ToString());
+
             }
             catch (Exception ex)
             {
@@ -83,7 +84,7 @@ namespace VoteRewards
                         try
                         {
                             // Mark the vote as claimed
-                            await Plugin.SetVoteAsClaimedAsync(steamId);
+                            await Plugin.ApiHelper.SetVoteAsClaimedAsync(steamId);
 
                             // Zbierz wszystkie udane nagrody w jednym miejscu
                             var successfulRewards = new List<string>();
