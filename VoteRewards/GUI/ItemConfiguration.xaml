@@ -68,7 +68,7 @@
         <StackPanel Grid.Column="0" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
             <Button Style="{StaticResource ButtonStyle1}" x:Name="AddRewardItemButton" Content="Add Item" Margin="5" Width="100" Click="AddRewardItemButton_OnClick" />
             <Button Style="{StaticResource ButtonStyle1}" x:Name="DeleteRewardItemButton" Content="Delete Item" Margin="5" Width="100" Click="DeleteRewardItemButton_OnClick" />
-            <Button Style="{StaticResource ButtonStyle1}" Content="Save Changes" Margin="5" Width="100" Click="SaveButton_OnClick"/>
+            <Button Style="{StaticResource ButtonStyle1}" Content="Save and Close" Margin="5" Width="100" Click="SaveButton_OnClick"/>
         </StackPanel>
     </Grid>
 </Window>
