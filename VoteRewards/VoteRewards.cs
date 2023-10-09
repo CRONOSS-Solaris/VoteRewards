@@ -67,9 +67,10 @@ namespace VoteRewards
         public override void Init(ITorchBase torch)
         {
             base.Init(torch);
-            SetupConfig();
-            SetupRewardItemsConfig();
-            SetupTimeSpentRewardsConfig();
+            _config = SetupConfig(CONFIG_FILE_NAME, new VoteRewardsConfig());
+            _rewardItemsConfig = SetupConfig(REWARD_ITEMS_CONFIG_FILE_NAME, new RewardItemsConfig());
+            _timeSpentRewardsConfig = SetupConfig("TimeSpentRewardsConfig.cfg", new TimeSpentRewardsConfig());
+
 
             if (Application.Current != null)
             {
@@ -196,121 +197,66 @@ namespace VoteRewards
             }
         }
 
-        private void SetupConfig()
+        private Persistent<T> SetupConfig<T>(string fileName, T defaultConfig) where T : new()
         {
             var configFolderPath = Path.Combine(StoragePath, "VoteReward", "Config");
             Directory.CreateDirectory(configFolderPath);
-            var configFile = Path.Combine(configFolderPath, CONFIG_FILE_NAME);
+            var configFilePath = Path.Combine(configFolderPath, fileName);
+
+            Persistent<T> config;
 
             try
             {
-                _config = Persistent<VoteRewardsConfig>.Load(configFile);
+                config = Persistent<T>.Load(configFilePath);
             }
             catch (Exception e)
             {
                 Log.Warn(e);
+                config = new Persistent<T>(configFilePath, defaultConfig);
             }
 
-            if (_config?.Data == null)
+            if (config.Data == null)
             {
-                Log.Info("Create Default Config, because none was found!");
+                Log.Info($"Creating default config for {fileName} because none was found!");
 
-                _config = new Persistent<VoteRewardsConfig>(configFile, new VoteRewardsConfig());
-                _config.Save();
+                config = new Persistent<T>(configFilePath, defaultConfig);
+                config.Save();
             }
+
+            return config;
         }
 
-        private void SetupRewardItemsConfig()
+        public List<RewardItem> GetRandomRewardsFromList(List<RewardItem> rewardsList)
         {
-            var configFolderPath = Path.Combine(StoragePath, "VoteReward", "Config");
-            Directory.CreateDirectory(configFolderPath);
-            var configFilePath = Path.Combine(configFolderPath, REWARD_ITEMS_CONFIG_FILE_NAME);
+            List<RewardItem> rewardItems = new List<RewardItem>();
 
-            try
-            {
-                _rewardItemsConfig = Persistent<RewardItemsConfig>.Load(configFilePath);
-            }
-            catch (Exception e)
-            {
-                Log.Warn(e);
-            }
+            // Dodajemy do listy przedmioty z 100% szansą na upadek
+            rewardItems.AddRange(rewardsList.Where(item => item.ChanceToDrop == 100));
 
-            if (_rewardItemsConfig?.Data == null)
+            // Dla każdego przedmiotu z szansą mniejszą niż 100%, losujemy, czy powinien zostać zwrócony
+            var rewardItemsToConsider = rewardsList.Where(item => item.ChanceToDrop < 100);
+            foreach (var item in rewardItemsToConsider)
             {
-                Log.Info("Creating default reward items config because none was found!");
-
-                _rewardItemsConfig = new Persistent<RewardItemsConfig>(configFilePath, new RewardItemsConfig());
-                _rewardItemsConfig.Save();
-            }
-        }
-
-        private void SetupTimeSpentRewardsConfig()
-        {
-            var configFolderPath = Path.Combine(StoragePath, "VoteReward", "Config");
-            Directory.CreateDirectory(configFolderPath);
-            var configFilePath = Path.Combine(configFolderPath, "TimeSpentRewardsConfig.cfg");
-
-            try
-            {
-                _timeSpentRewardsConfig = Persistent<TimeSpentRewardsConfig>.Load(configFilePath);
-            }
-            catch (Exception e)
-            {
-                Log.Warn(e);
+                int randomValue = _random.Next(0, 101);
+                if (randomValue <= item.ChanceToDrop)
+                {
+                    rewardItems.Add(item);
+                }
             }
 
-            if (_timeSpentRewardsConfig?.Data == null)
-            {
-                Log.Info("Creating default time spent rewards config because none was found!");
-
-                _timeSpentRewardsConfig = new Persistent<TimeSpentRewardsConfig>(configFilePath, new TimeSpentRewardsConfig());
-                _timeSpentRewardsConfig.Save();
-            }
+            return rewardItems;
         }
 
         public List<RewardItem> GetRandomTimeSpentReward()
         {
-            List<RewardItem> rewardItems = new List<RewardItem>();
-
-            // Dodajemy do listy przedmioty z 100% szansą na upadek
-            rewardItems.AddRange(TimeSpentRewardsConfig.RewardsList.Where(item => item.ChanceToDrop == 100));
-
-            // Dla każdego przedmiotu z szansą mniejszą niż 100%, losujemy, czy powinien zostać zwrócony
-            var rewardItemsToConsider = TimeSpentRewardsConfig.RewardsList.Where(item => item.ChanceToDrop < 100);
-
-            foreach (var item in rewardItemsToConsider)
-            {
-                int randomValue = _random.Next(0, 101);
-                if (randomValue <= item.ChanceToDrop)
-                {
-                    rewardItems.Add(item);
-                }
-            }
-
-            return rewardItems;
+            return GetRandomRewardsFromList(TimeSpentRewardsConfig.RewardsList);
         }
 
         public List<RewardItem> GetRandomRewards()
         {
-            List<RewardItem> rewardItems = new List<RewardItem>();
-
-            // Dodajemy do listy przedmioty z 100% szansą na upadek
-            rewardItems.AddRange(RewardItemsConfig.RewardItems.Where(item => item.ChanceToDrop == 100));
-
-            // Dla każdego przedmiotu z szansą mniejszą niż 100%, losujemy, czy powinien zostać zwrócony
-            var rewardItemsToConsider = RewardItemsConfig.RewardItems.Where(item => item.ChanceToDrop < 100);
-
-            foreach (var item in rewardItemsToConsider)
-            {
-                int randomValue = _random.Next(0, 101);
-                if (randomValue <= item.ChanceToDrop)
-                {
-                    rewardItems.Add(item);
-                }
-            }
-
-            return rewardItems;
+            return GetRandomRewardsFromList(RewardItemsConfig.RewardItems);
         }
+
 
         public bool AwardPlayer(ulong steamId, RewardItem rewardItem)
         {
