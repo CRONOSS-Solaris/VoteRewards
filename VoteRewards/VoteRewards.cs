@@ -137,7 +137,15 @@ namespace VoteRewards
                     }
 
                     LoadAvailableItemTypesAndSubtypes();
-                    _control.Dispatcher.Invoke(() => _control.UpdateButtonState(true));
+                    if (_control != null)
+                    {
+                        _control.Dispatcher.Invoke(() => _control.UpdateButtonState(true));
+                    }
+                    else
+                    {
+                        Log.Warn("GUI is not initialized. Skipping control update.");
+                    }
+
                     break;
 
                 case TorchSessionState.Unloading:
@@ -145,7 +153,15 @@ namespace VoteRewards
 
                     // Ustawienie menedżera na null podczas rozładowywania sesji
                     _multiplayerManager = null;
-                    _control.Dispatcher.Invoke(() => _control.UpdateButtonState(false));
+                    if (_control != null)
+                    {
+                        _control.Dispatcher.Invoke(() => _control.UpdateButtonState(false));
+                    }
+                    else
+                    {
+                        Log.Warn("GUI is not initialized. Skipping control update.");
+                    }
+
                     break;
             }
         }
