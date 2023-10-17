@@ -19,7 +19,7 @@ namespace VoteRewards.Utils
             ItemTypeId = string.Empty;
             ItemSubtypeId = string.Empty;
             Amount = 1;
-            ChanceToDrop = 1.0;
+            ChanceToDrop = 10.0;
         }
     }
 }
