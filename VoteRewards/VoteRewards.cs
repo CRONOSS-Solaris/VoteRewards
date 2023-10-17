@@ -66,6 +66,7 @@ namespace VoteRewards
 
         private Dictionary<ulong, TimeSpan> _playerTimeSpent = new Dictionary<ulong, TimeSpan>();
         private Timer _updatePlayerTimeSpentTimer;
+        internal VoteRewardsConfig Data;
 
         public override void Init(ITorchBase torch)
         {
@@ -95,7 +96,7 @@ namespace VoteRewards
             if (sessionManager != null)
                 sessionManager.SessionStateChanged += SessionChanged;
             else
-                Log.Warn("No session manager loaded!");
+                LoggerHelper.DebugLog(Log, _config.Data, "No session manager loaded!");
 
             Save();
         }
@@ -120,14 +121,14 @@ namespace VoteRewards
             switch (state)
             {
                 case TorchSessionState.Loaded:
-                    Log.Info("Session Loaded!");
+                    LoggerHelper.DebugLog(Log, _config.Data, "Session Loaded!");
 
                     _updatePlayerTimeSpentTimer = new Timer(UpdatePlayerTimeSpent, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
                     // Tutaj możesz zainicjować referencję do menedżera multiplayer
                     _multiplayerManager = Torch.Managers.GetManager<IMultiplayerManagerBase>();
                     if (_multiplayerManager == null)
                     {
-                        Log.Warn("Could not get multiplayer manager.");
+                        LoggerHelper.DebugLog(Log, _config.Data, "Could not get multiplayer manager.");
                     }
                     else
                     {
@@ -143,13 +144,13 @@ namespace VoteRewards
                     }
                     else
                     {
-                        Log.Warn("GUI is not initialized. Skipping control update.");
+                        LoggerHelper.DebugLog(Log, _config.Data, "GUI is not initialized. Skipping control update.");
                     }
 
                     break;
 
                 case TorchSessionState.Unloading:
-                    Log.Info("Session Unloading!");
+                    LoggerHelper.DebugLog(Log, _config.Data, "Session Unloading!");
 
                     // Ustawienie menedżera na null podczas rozładowywania sesji
                     _multiplayerManager = null;
@@ -159,7 +160,7 @@ namespace VoteRewards
                     }
                     else
                     {
-                        Log.Warn("GUI is not initialized. Skipping control update.");
+                        LoggerHelper.DebugLog(Log, _config.Data, "GUI is not initialized. Skipping control update.");
                     }
 
                     break;
@@ -291,7 +292,7 @@ namespace VoteRewards
         {
             if (RewardItemsConfig == null || RewardItemsConfig.RewardItems == null)
             {
-                Log.Error("Error: One or more required properties are null in RewardManager. Cannot proceed.");
+                LoggerHelper.DebugLog(Log, _config.Data, "Error: One or more required properties are null in RewardManager. Cannot proceed.");
                 return null;
             }
 

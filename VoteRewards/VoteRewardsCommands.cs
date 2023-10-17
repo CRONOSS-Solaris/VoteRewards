@@ -14,6 +14,7 @@ using Torch.Managers;
 using VoteRewards.Utils;
 using VRage.Game.ModAPI;
 using VRageMath;
+using VoteRewards.Utils;
 
 
 namespace VoteRewards
@@ -22,6 +23,8 @@ namespace VoteRewards
     {
 
         public VoteRewards Plugin => (VoteRewards)Context.Plugin;
+        public static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private VoteRewards _config;
 
         [Command("vote", "Directs the player to the voting page.")]
         [Permission(MyPromoteLevel.None)]
@@ -57,7 +60,7 @@ namespace VoteRewards
             catch (Exception ex)
             {
                 VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to check your vote status. Please try again later.", Color.Green, Context.Player.SteamUserId);
-                VoteRewards.Log.Warn("Failed to check the vote status: " + ex.Message);
+                LoggerHelper.DebugLog(Log, _config.Data, "Failed to check the vote status: " + ex.Message);
                 return;
             }
 
@@ -95,11 +98,11 @@ namespace VoteRewards
                                 if (rewardGranted)
                                 {
                                     successfulRewards.Add($"{reward.Amount}x {reward.ItemSubtypeId}");
-                                    VoteRewards.Log.Info($"Player {steamId} received {reward.Amount} of {reward.ItemSubtypeId}.");
+                                    LoggerHelper.DebugLog(Log, _config.Data, $"Player {steamId} received {reward.Amount} of {reward.ItemSubtypeId}.");
                                 }
                                 else
                                 {
-                                    VoteRewards.Log.Warn($"Player {steamId}'s inventory is full. Could not grant reward.");
+                                    LoggerHelper.DebugLog(Log, _config.Data, $"Player {steamId}'s inventory is full. Could not grant reward.");
                                 }
                             }
 
@@ -118,13 +121,13 @@ namespace VoteRewards
                         catch (Exception ex)
                         {
                             messages.Add("Failed to claim the reward. Please try again later.");
-                            VoteRewards.Log.Warn("Failed to claim the reward: " + ex.Message);
+                            LoggerHelper.DebugLog(Log, _config.Data, "Failed to claim the reward: " + ex.Message);
                         }
                     }
                     else
                     {
                         messages.Add("No reward available at the moment. Please try again later.");
-                        VoteRewards.Log.Warn("No reward item found for player " + steamId);
+                        LoggerHelper.DebugLog(Log, _config.Data, "No reward item found for player " + steamId);
                     }
                     break;
                 case 2:
