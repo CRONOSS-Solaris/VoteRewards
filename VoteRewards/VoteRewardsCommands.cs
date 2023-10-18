@@ -60,7 +60,7 @@ namespace VoteRewards
             catch (Exception ex)
             {
                 VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to check your vote status. Please try again later.", Color.Green, Context.Player.SteamUserId);
-                LoggerHelper.DebugLog(Log, _config.Data, "Failed to check the vote status: " + ex.Message);
+                LoggerHelper.DebugLog(Log, Plugin.Config, "Failed to check the vote status: " + ex.Message);
                 return;
             }
 
@@ -98,11 +98,11 @@ namespace VoteRewards
                                 if (rewardGranted)
                                 {
                                     successfulRewards.Add($"{reward.Amount}x {reward.ItemSubtypeId}");
-                                    LoggerHelper.DebugLog(Log, _config.Data, $"Player {steamId} received {reward.Amount} of {reward.ItemSubtypeId}.");
+                                    LoggerHelper.DebugLog(Log, Plugin.Config, $"Player {steamId} received {reward.Amount} of {reward.ItemSubtypeId}.");
                                 }
                                 else
                                 {
-                                    LoggerHelper.DebugLog(Log, _config.Data, $"Player {steamId}'s inventory is full. Could not grant reward.");
+                                    LoggerHelper.DebugLog(Log, Plugin.Config, $"Player {steamId}'s inventory is full. Could not grant reward.");
                                 }
                             }
 
@@ -121,13 +121,13 @@ namespace VoteRewards
                         catch (Exception ex)
                         {
                             messages.Add("Failed to claim the reward. Please try again later.");
-                            LoggerHelper.DebugLog(Log, _config.Data, "Failed to claim the reward: " + ex.Message);
+                            LoggerHelper.DebugLog(Log, Plugin.Config, "Failed to claim the reward: " + ex.Message);
                         }
                     }
                     else
                     {
                         messages.Add("No reward available at the moment. Please try again later.");
-                        LoggerHelper.DebugLog(Log, _config.Data, "No reward item found for player " + steamId);
+                        LoggerHelper.DebugLog(Log, Plugin.Config, "No reward item found for player " + steamId);
                     }
                     break;
                 case 2:

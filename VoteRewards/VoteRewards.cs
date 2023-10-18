@@ -66,7 +66,6 @@ namespace VoteRewards
 
         private Dictionary<ulong, TimeSpan> _playerTimeSpent = new Dictionary<ulong, TimeSpan>();
         private Timer _updatePlayerTimeSpentTimer;
-        internal VoteRewardsConfig Data;
 
         public override void Init(ITorchBase torch)
         {
