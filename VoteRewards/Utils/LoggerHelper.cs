@@ -13,7 +13,7 @@ namespace VoteRewards.Utils
         {
             if (config?.DebugMode ?? false)
             {
-                log.Info(message);
+                log.Warn(message);
             }
         }
     }

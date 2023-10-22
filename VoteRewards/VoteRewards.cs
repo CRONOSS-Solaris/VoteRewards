@@ -301,48 +301,74 @@ namespace VoteRewards
 
         public bool AwardPlayer(ulong steamId, RewardItem rewardItem)
         {
-            var player = MySession.Static.Players.TryGetPlayerBySteamId(steamId);
-            if (player == null)
+            try // Dodano blok try-catch do obsługi wyjątków
             {
+                var player = MySession.Static.Players.TryGetPlayerBySteamId(steamId);
+                if (player == null)
+                {
+                    LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Player with Steam ID not found: {steamId}");
+                    return false;
+                }
+
+                // Spróbuj znaleźć definicję przedmiotu na podstawie Id przedmiotu
+                MyDefinitionId definitionId;
+                try
+                {
+                    definitionId = new MyDefinitionId(MyObjectBuilderType.Parse(rewardItem.ItemTypeId), rewardItem.ItemSubtypeId);
+                }
+                catch
+                {
+                    LoggerHelper.DebugLog(Log, _config.Data, $"ITEM():Incorrect ID of type or subtype of item.");
+                    return false;
+                }
+
+                if (!MyDefinitionManager.Static.TryGetPhysicalItemDefinition(definitionId, out var itemDefinition))
+                {
+                    LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): It is impossible to find a definition of the subject for {rewardItem.ItemTypeId} {rewardItem.ItemSubtypeId}");
+                    return false;
+                }
+
+                // Stwórz nowy obiekt fizyczny używając definicji przedmiotu i ilości
+                MyObjectBuilder_PhysicalObject physicalObject = MyObjectBuilderSerializer.CreateNewObject(definitionId) as MyObjectBuilder_PhysicalObject;
+                if (physicalObject == null)
+                {
+                    LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): You cannot create a physical object for {definitionId}");
+                    return false;
+                }
+
+                // Pobierz inwentarz postaci
+                var character = player.Character;
+                if (character == null)
+                {
+                    LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Player {player.DisplayName} is not welded.");
+                    return false;
+                }
+                var inventory = character.GetInventory();
+                if (inventory == null)
+                {
+                    LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Unable to obtain inventory for player {player.DisplayName}.");
+                    return false;
+                }
+
+                // Sprawdź dostępność miejsca w inwentarzu
+                var itemVolume = (MyFixedPoint)(rewardItem.Amount * itemDefinition.Volume);
+                if (inventory.CurrentVolume + itemVolume > inventory.MaxVolume)
+                {
+                    LoggerHelper.DebugLog(Log, _config.Data, $"INVENTORY(): Lack of space in the player's inventory {player.DisplayName}.");
+                    return false; // Nie ma wystarczająco miejsca w inwentarzu
+                }
+
+                // Dodaj przedmiot do inwentarza gracza
+                inventory.AddItems(rewardItem.Amount, physicalObject);
+                return true; // Nagroda została przyznana
+            }
+            catch (Exception ex) // Obsługa ogólnych wyjątków, które mogłyby się pojawić
+            {
+                LoggerHelper.DebugLog(Log, _config.Data, $"ERROR(): An error occurred while awarding a player. Exception: {ex.Message}");
                 return false;
             }
-
-            // Spróbuj znaleźć definicję przedmiotu na podstawie Id przedmiotu
-            MyDefinitionId definitionId = new MyDefinitionId(MyObjectBuilderType.Parse(rewardItem.ItemTypeId), rewardItem.ItemSubtypeId);
-            if (!MyDefinitionManager.Static.TryGetPhysicalItemDefinition(definitionId, out var itemDefinition))
-            {
-                LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): Could not find item definition for {rewardItem.ItemTypeId} {rewardItem.ItemSubtypeId}");
-                return false;
-            }
-
-            // Stwórz nowy przedmiot używając definicji przedmiotu i ilości
-            MyObjectBuilder_PhysicalObject physicalObject = MyObjectBuilderSerializer.CreateNewObject(definitionId) as MyObjectBuilder_PhysicalObject;
-
-            // Get the character's inventory
-            var character = player.Character;
-            if (character == null)
-            {
-                LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Player {player.DisplayName} is not spawned.");
-                return false;
-            }
-            var inventory = character.GetInventory();
-            if (inventory == null)
-            {
-                LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Could not get the inventory for player {player.DisplayName}.");
-                return false;
-            }
-
-            // Sprawdź dostępność miejsca w inwentarzu
-            var itemVolume = (MyFixedPoint)(rewardItem.Amount * itemDefinition.Volume);
-            if (inventory.CurrentVolume + itemVolume > inventory.MaxVolume)
-            {
-                return false; // Nie ma wystarczająco miejsca w inwentarzu
-            }
-
-            // Dodaj przedmiot do inwentarza gracza
-            inventory.AddItems(rewardItem.Amount, physicalObject);
-            return true; // Nagroda została przyznana
         }
+
 
         // Nowa metoda do ładowania dostępnych typów i podtypów przedmiotów
         private void LoadAvailableItemTypesAndSubtypes()
