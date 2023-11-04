@@ -91,7 +91,7 @@
         </StackPanel>
 
         <!-- Tabela z nagrodami -->
-        <DataGrid x:Name="TimeSpentRewardsDataGrid" Grid.Column="0" Grid.Row="2" AutoGenerateColumns="False" Margin="5">
+        <DataGrid x:Name="TimeSpentRewardsDataGrid" Grid.Column="0" Grid.Row="2" AutoGenerateColumns="False" Margin="5" SelectionChanged="TimeSpentRewardsDataGrid_SelectionChanged">
             <DataGrid.Columns>
                 <DataGridTemplateColumn Header="Item Type ID">
                     <DataGridTemplateColumn.CellTemplate>
