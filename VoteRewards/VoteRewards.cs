@@ -65,6 +65,7 @@ namespace VoteRewards
         private Dictionary<ulong, TimeSpan> _playerTimeSpent = new Dictionary<ulong, TimeSpan>();
         private Timer _updatePlayerTimeSpentTimer;
 
+
         public override void Init(ITorchBase torch)
         {
             base.Init(torch);
@@ -150,7 +151,6 @@ namespace VoteRewards
 
         private void UpdatePlayerTimeSpent(object state)
         {
-            // Instantiate GetRandomRewardsUtils with the required configuration instances
             var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig);
 
             foreach (var player in MySession.Static.Players.GetOnlinePlayers())
@@ -163,44 +163,38 @@ namespace VoteRewards
 
                 _playerTimeSpent[steamId] += TimeSpan.FromMinutes(1);
 
-                // Check if the player qualifies for a reward
                 if (_playerTimeSpent[steamId].TotalMinutes >= this.TimeSpentRewardsConfig.RewardInterval)
                 {
-                    // Get a list of rewards using the instance of getRandomRewardsUtils
                     List<RewardItem> rewards = getRandomRewardsUtils.GetRandomTimeSpentReward();
-
-                    // Remove null rewards (if any)
                     rewards.RemoveAll(item => item == null);
 
                     if (rewards.Any())
                     {
-                        // Collect all the successful rewards in one place
                         var successfulRewards = new List<string>();
 
                         foreach (var rewardItem in rewards)
                         {
-                            bool awarded = AwardPlayer(steamId, rewardItem); // Award the player the reward
+                            // Calculate the random amount here where you have the specific rewardItem
+                            int randomAmount = getRandomRewardsUtils.GetRandomAmount(rewardItem.AmountOne, rewardItem.AmountTwo);
+                            bool awarded = AwardPlayer(steamId, rewardItem, randomAmount); // Pass randomAmount to AwardPlayer
 
-                            // If the award was successful, add it to the list of successful rewards
                             if (awarded)
                             {
-                                successfulRewards.Add($"{rewardItem.Amount}x {rewardItem.ItemSubtypeId}");
+                                successfulRewards.Add($"{randomAmount}x {rewardItem.ItemSubtypeId}");
                             }
                         }
 
-                        // Check if any rewards were successfully awarded
                         if (successfulRewards.Any())
                         {
-                            // Send a single notification with all the rewards
-                            ChatManager.SendMessageAsOther(this.TimeSpentRewardsConfig.NotificationPrefixx, $"Congratulations! \nYou have received:\n{string.Join("\n", successfulRewards)}\nfor your time spent on the server.", Color.Green, steamId);
+                            ChatManager.SendMessageAsOther(this.TimeSpentRewardsConfig.NotificationPrefixx, $"Congratulations! You have received:\n{string.Join("\n", successfulRewards)}", Color.Green, steamId);
                         }
                     }
 
-                    // Reset the player's time spent
                     _playerTimeSpent[steamId] = TimeSpan.Zero;
                 }
             }
         }
+
 
 
         private Persistent<T> SetupConfig<T>(string fileName, T defaultConfig) where T : new()
@@ -248,7 +242,7 @@ namespace VoteRewards
         }
 
 
-        public bool AwardPlayer(ulong steamId, RewardItem rewardItem)
+        public bool AwardPlayer(ulong steamId, RewardItem rewardItem, int randomAmount)
         {
             var player = MySession.Static.Players.TryGetPlayerBySteamId(steamId);
             if (player == null)
@@ -256,7 +250,7 @@ namespace VoteRewards
                 return false;
             }
 
-            // Spróbuj znaleźć definicję przedmiotu na podstawie Id przedmiotu
+            // Try to find the definition of the item based on the item's ID
             MyDefinitionId definitionId = new MyDefinitionId(MyObjectBuilderType.Parse(rewardItem.ItemTypeId), rewardItem.ItemSubtypeId);
             if (!MyDefinitionManager.Static.TryGetPhysicalItemDefinition(definitionId, out var itemDefinition))
             {
@@ -264,7 +258,9 @@ namespace VoteRewards
                 return false;
             }
 
-            // Stwórz nowy przedmiot używając definicji przedmiotu i ilości
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig);
+
+            // Create a new item using the item definition and the random amount
             MyObjectBuilder_PhysicalObject physicalObject = MyObjectBuilderSerializer.CreateNewObject(definitionId) as MyObjectBuilder_PhysicalObject;
 
             // Get the character's inventory
@@ -281,17 +277,18 @@ namespace VoteRewards
                 return false;
             }
 
-            // Sprawdź dostępność miejsca w inwentarzu
-            var itemVolume = (MyFixedPoint)(rewardItem.Amount * itemDefinition.Volume);
+            // Check available space in inventory
+            var itemVolume = (MyFixedPoint)(randomAmount * itemDefinition.Volume);
             if (inventory.CurrentVolume + itemVolume > inventory.MaxVolume)
             {
-                return false; // Nie ma wystarczająco miejsca w inwentarzu
+                return false; // Not enough space in inventory
             }
 
-            // Dodaj przedmiot do inwentarza gracza
-            inventory.AddItems(rewardItem.Amount, physicalObject);
-            return true; // Nagroda została przyznana
+            // Add the item to the player's inventory
+            inventory.AddItems(randomAmount, physicalObject);
+            return true; // The reward has been awarded
         }
+
 
         // Nowa metoda do ładowania dostępnych typów i podtypów przedmiotów
         private void LoadAvailableItemTypesAndSubtypes()
