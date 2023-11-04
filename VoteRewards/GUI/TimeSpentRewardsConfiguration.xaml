@@ -91,7 +91,7 @@
         </StackPanel>
 
         <!-- Tabela z nagrodami -->
-        <DataGrid x:Name="TimeSpentRewardsDataGrid" Grid.Column="0" Grid.Row="2" AutoGenerateColumns="False" Margin="5">
+        <DataGrid x:Name="TimeSpentRewardsDataGrid" Grid.Column="0" Grid.Row="2" AutoGenerateColumns="False" Margin="5" SelectionChanged="TimeSpentRewardsDataGrid_SelectionChanged">
             <DataGrid.Columns>
                 <DataGridTemplateColumn Header="Item Type ID">
                     <DataGridTemplateColumn.CellTemplate>
@@ -123,7 +123,8 @@
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTextColumn Header="Amount" Binding="{Binding Amount}" IsReadOnly="False" />
+                <DataGridTextColumn Header="Amount One (from)" Binding="{Binding AmountOne}" IsReadOnly="False" />
+                <DataGridTextColumn Header="Amount Two (to)" Binding="{Binding AmountTwo}" IsReadOnly="False" />
                 <DataGridTextColumn Header="Chance to Drop" Binding="{Binding ChanceToDrop}" IsReadOnly="False" />
             </DataGrid.Columns>
         </DataGrid>

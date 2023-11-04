@@ -64,5 +64,13 @@ namespace VoteRewards.Utils
 
             return GetRandomRewardsFromList(_rewardItemsConfig.RewardItems);
         }
+
+
+        private readonly Random _randomAmount = new Random();
+
+        public int GetRandomAmount(int amountOne, int amountTwo)
+        {
+            return _randomAmount.Next(amountOne, amountTwo + 1);
+        }
     }
 }
