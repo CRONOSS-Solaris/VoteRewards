@@ -66,11 +66,29 @@ namespace VoteRewards.Utils
         }
 
 
-        private readonly Random _randomAmount = new Random();
+        public static class ThreadSafeRandom
+        {
+            private static readonly Random Global = new Random();
+            [ThreadStatic] private static Random _local;
+
+            public static int Next(int min, int max)
+            {
+                Random inst = _local;
+                if (inst == null)
+                {
+                    int seed;
+                    lock (Global) seed = Global.Next();
+                    _local = inst = new Random(seed);
+                }
+                return inst.Next(min, max);
+            }
+        }
+
 
         public int GetRandomAmount(int amountOne, int amountTwo)
         {
-            return _randomAmount.Next(amountOne, amountTwo + 1);
+            return ThreadSafeRandom.Next(amountOne, amountTwo + 1);
         }
+
     }
 }
