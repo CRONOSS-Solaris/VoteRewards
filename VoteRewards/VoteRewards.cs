@@ -1,4 +1,4 @@
-﻿using NLog;
+using NLog;
 using Sandbox.Definitions;  // Importujemy, aby móc używać MyPhysicalItemDefinition
 using Sandbox.Game.Entities;
 using Sandbox.Game.World;
