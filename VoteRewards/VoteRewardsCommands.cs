@@ -1,4 +1,4 @@
-﻿using NLog;
+using NLog;
 using NLog.Fluent;
 using Sandbox.Game;
 using Sandbox.Game.World;
@@ -14,7 +14,6 @@ using Torch.Managers;
 using VoteRewards.Utils;
 using VRage.Game.ModAPI;
 using VRageMath;
-using VoteRewards.Utils;
 
 
 namespace VoteRewards
@@ -23,8 +22,6 @@ namespace VoteRewards
     {
 
         public VoteRewards Plugin => (VoteRewards)Context.Plugin;
-        public static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        private VoteRewards _config;
 
         [Command("vote", "Directs the player to the voting page.")]
         [Permission(MyPromoteLevel.None)]
@@ -51,20 +48,21 @@ namespace VoteRewards
             var steamId = Context.Player.SteamUserId;
             var identityId = Context.Player.IdentityId;
 
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig);
+
             int voteStatus;
             try
             {
                 voteStatus = await Plugin.ApiHelper.CheckVoteStatusAsync(steamId.ToString());
-
             }
             catch (Exception ex)
             {
                 VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to check your vote status. Please try again later.", Color.Green, Context.Player.SteamUserId);
-                LoggerHelper.DebugLog(Log, Plugin.Config, "Failed to check the vote status: " + ex.Message);
+                VoteRewards.Log.Warn("Failed to check the vote status: " + ex.Message);
                 return;
             }
 
-            List<string> messages = new List<string> { $"{Plugin.Config.NotificationPrefix}" }; // Dodaj prefix jako pierwszą wiadomość
+            List<string> messages = new List<string> { $"{Plugin.Config.NotificationPrefix}" }; // Add prefix as the first message
 
             switch (voteStatus)
             {
@@ -75,38 +73,32 @@ namespace VoteRewards
                     messages.Add("You have not voted yet. Please vote first.");
                     break;
                 case 1:
-                    // Zamiast wywoływać GetRandomReward trzy razy, wywołujemy GetRandomRewards raz, aby otrzymać wszystkie nagrody
-                    List<RewardItem> rewards = Plugin.GetRandomRewards();
-
-                    // Usuń null z listy nagród (jeśli jakiś przedmiot nie został wylosowany)
+                    List<RewardItem> rewards = getRandomRewardsUtils.GetRandomRewards();
                     rewards.RemoveAll(item => item == null);
 
                     if (rewards.Any())
                     {
                         try
                         {
-                            // Mark the vote as claimed
                             await Plugin.ApiHelper.SetVoteAsClaimedAsync(steamId);
 
-                            // Zbierz wszystkie udane nagrody w jednym miejscu
                             var successfulRewards = new List<string>();
 
                             foreach (var reward in rewards)
                             {
-                                // Spróbuj przyznać nagrodę graczowi
-                                bool rewardGranted = Plugin.AwardPlayer(Context.Player.SteamUserId, reward);
+                                int randomAmount = getRandomRewardsUtils.GetRandomAmount(reward.AmountOne, reward.AmountTwo);
+                                bool rewardGranted = Plugin.AwardPlayer(Context.Player.SteamUserId, reward, randomAmount); // Adjust AwardPlayer to accept randomAmount
                                 if (rewardGranted)
                                 {
-                                    successfulRewards.Add($"{reward.Amount}x {reward.ItemSubtypeId}");
-                                    LoggerHelper.DebugLog(Log, Plugin.Config, $"Player {steamId} received {reward.Amount} of {reward.ItemSubtypeId}.");
+                                    successfulRewards.Add($"{randomAmount}x {reward.ItemSubtypeId}");
+                                    VoteRewards.Log.Info($"Player {steamId} received {randomAmount} of {reward.ItemSubtypeId}.");
                                 }
                                 else
                                 {
-                                    LoggerHelper.DebugLog(Log, Plugin.Config, $"Player {steamId}'s inventory is full. Could not grant reward.");
+                                    VoteRewards.Log.Warn($"Player {steamId}'s inventory is full. Could not grant reward.");
                                 }
                             }
 
-                            // Sprawdź, czy jakiekolwiek nagrody zostały przyznane
                             if (successfulRewards.Any())
                             {
                                 messages.Add("You received:");
@@ -121,13 +113,13 @@ namespace VoteRewards
                         catch (Exception ex)
                         {
                             messages.Add("Failed to claim the reward. Please try again later.");
-                            LoggerHelper.DebugLog(Log, Plugin.Config, "Failed to claim the reward: " + ex.Message);
+                            VoteRewards.Log.Warn("Failed to claim the reward: " + ex.Message);
                         }
                     }
                     else
                     {
                         messages.Add("No reward available at the moment. Please try again later.");
-                        LoggerHelper.DebugLog(Log, Plugin.Config, "No reward item found for player " + steamId);
+                        VoteRewards.Log.Warn("No reward item found for player " + steamId);
                     }
                     break;
                 case 2:
@@ -135,48 +127,9 @@ namespace VoteRewards
                     break;
             }
 
-            // Połącz wszystkie wiadomości w jedną i wyślij
             VoteRewards.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
         }
 
-        [Command("testgetrandomreward", "Test the GetRandomRewards method.")]
-        [Permission(MyPromoteLevel.Admin)]  // Ustaw na Admin, aby tylko admini mogli używać tej komendy
-        public void TestGetRandomReward()
-        {
-            List<RewardItem> rewards = Plugin.GetRandomRewards();
-
-            if (rewards.Any())
-            {
-                var rewardDescriptions = rewards.Select(reward => $"{reward.Amount} of {reward.ItemSubtypeId}").ToList();
-                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Generated random rewards: {string.Join(", ", rewardDescriptions)}", Color.Green, Context.Player.SteamUserId);
-            }
-            else
-            {
-                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "No reward generated.", Color.Green, Context.Player.SteamUserId);
-            }
-        }
-
-        [Command("testawardplayer", "Test the AwardPlayer method. Usage: /testawardplayer <ItemTypeId> <ItemSubtypeId> <Amount>")]
-        [Permission(MyPromoteLevel.Admin)]  // Ustaw na Admin, aby tylko admini mogli używać tej komendy
-        public void TestAwardPlayer(string itemTypeId, string itemSubtypeId, int amount)
-        {
-            RewardItem reward = new RewardItem
-            {
-                ItemTypeId = itemTypeId,
-                ItemSubtypeId = itemSubtypeId,
-                Amount = amount
-            };
-
-            bool rewardGranted = Plugin.AwardPlayer(Context.Player.SteamUserId, reward);
-            if (rewardGranted)
-            {
-                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Successfully awarded {amount} of {itemSubtypeId}", Color.Green, Context.Player.SteamUserId);
-            }
-            else
-            {
-                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Failed to award {amount} of {itemSubtypeId}. It is possible that the inventory is full.", Color.Green, Context.Player.SteamUserId);
-            }
-        }
 
     }
 }

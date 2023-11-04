@@ -7,7 +7,8 @@ namespace VoteRewards.Utils
     {
         public string ItemTypeId { get; set; }
         public string ItemSubtypeId { get; set; }
-        public int Amount { get; set; }
+        public int AmountOne { get; set; }
+        public int AmountTwo { get; set; }
         public double ChanceToDrop { get; set; }
         
         [XmlIgnore]
@@ -18,7 +19,8 @@ namespace VoteRewards.Utils
             // Domyślne wartości
             ItemTypeId = string.Empty;
             ItemSubtypeId = string.Empty;
-            Amount = 1;
+            AmountOne = 1;
+            AmountTwo = 5;
             ChanceToDrop = 10.0;
         }
     }

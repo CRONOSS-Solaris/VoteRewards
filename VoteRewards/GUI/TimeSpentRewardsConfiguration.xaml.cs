@@ -144,5 +144,6 @@ namespace VoteRewards
 
             return null;
         }
+
     }
 }

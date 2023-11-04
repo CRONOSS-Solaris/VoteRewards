@@ -1,4 +1,4 @@
-﻿using NLog;
+using NLog;
 using Sandbox.Definitions;  // Importujemy, aby móc używać MyPhysicalItemDefinition
 using Sandbox.Game.Entities;
 using Sandbox.Game.World;
@@ -56,8 +56,6 @@ namespace VoteRewards
         private Persistent<TimeSpentRewardsConfig> _timeSpentRewardsConfig;
         public TimeSpentRewardsConfig TimeSpentRewardsConfig => _timeSpentRewardsConfig?.Data;
 
-        private Random _random = new Random();
-
         // Nowe listy do przechowywania dostępnych typów i podtypów przedmiotów
         public List<string> AvailableItemTypes { get; private set; } = new List<string>();
         public Dictionary<string, List<string>> AvailableItemSubtypes { get; private set; } = new Dictionary<string, List<string>>();
@@ -66,6 +64,7 @@ namespace VoteRewards
 
         private Dictionary<ulong, TimeSpan> _playerTimeSpent = new Dictionary<ulong, TimeSpan>();
         private Timer _updatePlayerTimeSpentTimer;
+
 
         public override void Init(ITorchBase torch)
         {
@@ -95,7 +94,7 @@ namespace VoteRewards
             if (sessionManager != null)
                 sessionManager.SessionStateChanged += SessionChanged;
             else
-                LoggerHelper.DebugLog(Log, _config.Data, "No session manager loaded!");
+                Log.Warn("No session manager loaded!");
 
             Save();
         }
@@ -120,14 +119,14 @@ namespace VoteRewards
             switch (state)
             {
                 case TorchSessionState.Loaded:
-                    LoggerHelper.DebugLog(Log, _config.Data, "Session Loaded!");
+                    Log.Info("Session Loaded!");
 
                     _updatePlayerTimeSpentTimer = new Timer(UpdatePlayerTimeSpent, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
                     // Tutaj możesz zainicjować referencję do menedżera multiplayer
                     _multiplayerManager = Torch.Managers.GetManager<IMultiplayerManagerBase>();
                     if (_multiplayerManager == null)
                     {
-                        LoggerHelper.DebugLog(Log, _config.Data, "Could not get multiplayer manager.");
+                        Log.Warn("Could not get multiplayer manager.");
                     }
                     else
                     {
@@ -137,37 +136,23 @@ namespace VoteRewards
                     }
 
                     LoadAvailableItemTypesAndSubtypes();
-                    if (_control != null)
-                    {
-                        _control.Dispatcher.Invoke(() => _control.UpdateButtonState(true));
-                    }
-                    else
-                    {
-                        LoggerHelper.DebugLog(Log, _config.Data, "GUI is not initialized. Skipping control update.");
-                    }
-
+                    _control.Dispatcher.Invoke(() => _control.UpdateButtonState(true));
                     break;
 
                 case TorchSessionState.Unloading:
-                    LoggerHelper.DebugLog(Log, _config.Data, "Session Unloading!");
+                    Log.Info("Session Unloading!");
 
                     // Ustawienie menedżera na null podczas rozładowywania sesji
                     _multiplayerManager = null;
-                    if (_control != null)
-                    {
-                        _control.Dispatcher.Invoke(() => _control.UpdateButtonState(false));
-                    }
-                    else
-                    {
-                        LoggerHelper.DebugLog(Log, _config.Data, "GUI is not initialized. Skipping control update.");
-                    }
-
+                    _control.Dispatcher.Invoke(() => _control.UpdateButtonState(false));
                     break;
             }
         }
 
         private void UpdatePlayerTimeSpent(object state)
         {
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig);
+
             foreach (var player in MySession.Static.Players.GetOnlinePlayers())
             {
                 var steamId = player.Id.SteamId;
@@ -178,44 +163,39 @@ namespace VoteRewards
 
                 _playerTimeSpent[steamId] += TimeSpan.FromMinutes(1);
 
-                // Check if the player qualifies for a reward
-                if (_playerTimeSpent[steamId].TotalMinutes >= TimeSpentRewardsConfig.RewardInterval)
+                if (_playerTimeSpent[steamId].TotalMinutes >= this.TimeSpentRewardsConfig.RewardInterval)
                 {
-                    // Get a list of rewards using the updated method
-                    List<RewardItem> rewards = GetRandomTimeSpentReward();
-
-                    // Remove null rewards (if any)
+                    List<RewardItem> rewards = getRandomRewardsUtils.GetRandomTimeSpentReward();
                     rewards.RemoveAll(item => item == null);
 
                     if (rewards.Any())
                     {
-                        // Collect all the successful rewards in one place
                         var successfulRewards = new List<string>();
 
                         foreach (var rewardItem in rewards)
                         {
-                            bool awarded = AwardPlayer(steamId, rewardItem);  // Award the player the reward
+                            // Calculate the random amount here where you have the specific rewardItem
+                            int randomAmount = getRandomRewardsUtils.GetRandomAmount(rewardItem.AmountOne, rewardItem.AmountTwo);
+                            bool awarded = AwardPlayer(steamId, rewardItem, randomAmount); // Pass randomAmount to AwardPlayer
 
-                            // If the award was successful, add it to the list of successful rewards
                             if (awarded)
                             {
-                                successfulRewards.Add($"{rewardItem.Amount}x {rewardItem.ItemSubtypeId}");
+                                successfulRewards.Add($"{randomAmount}x {rewardItem.ItemSubtypeId}");
                             }
                         }
 
-                        // Check if any rewards were successfully awarded
                         if (successfulRewards.Any())
                         {
-                            // Send a single notification with all the rewards
-                            ChatManager.SendMessageAsOther($"{TimeSpentRewardsConfig.NotificationPrefixx}", $"Congratulations! \nYou have received:\n{string.Join("\n", successfulRewards)}\nfor your time spent on the server.", Color.Green, steamId);
+                            ChatManager.SendMessageAsOther(this.TimeSpentRewardsConfig.NotificationPrefixx, $"Congratulations! You have received:\n{string.Join("\n", successfulRewards)}", Color.Green, steamId);
                         }
                     }
 
-                    // Reset the player's time spent
                     _playerTimeSpent[steamId] = TimeSpan.Zero;
                 }
             }
         }
+
+
 
         private Persistent<T> SetupConfig<T>(string fileName, T defaultConfig) where T : new()
         {
@@ -261,112 +241,52 @@ namespace VoteRewards
             }
         }
 
-        public List<RewardItem> GetRandomRewardsFromList(List<RewardItem> rewardsList)
+
+        public bool AwardPlayer(ulong steamId, RewardItem rewardItem, int randomAmount)
         {
-            List<RewardItem> rewardItems = new List<RewardItem>();
-
-            // Dodajemy do listy przedmioty z 100% szansą na upadek
-            rewardItems.AddRange(rewardsList.Where(item => item.ChanceToDrop == 100));
-
-            // Dla każdego przedmiotu z szansą mniejszą niż 100%, losujemy, czy powinien zostać zwrócony
-            var rewardItemsToConsider = rewardsList.Where(item => item.ChanceToDrop < 100);
-            foreach (var item in rewardItemsToConsider)
+            var player = MySession.Static.Players.TryGetPlayerBySteamId(steamId);
+            if (player == null)
             {
-                int randomValue = _random.Next(0, 101);
-                if (randomValue <= item.ChanceToDrop)
-                {
-                    rewardItems.Add(item);
-                }
-            }
-
-            return rewardItems;
-        }
-
-        public List<RewardItem> GetRandomTimeSpentReward()
-        {
-            return GetRandomRewardsFromList(TimeSpentRewardsConfig.RewardsList);
-        }
-
-        public List<RewardItem> GetRandomRewards()
-        {
-            if (RewardItemsConfig == null || RewardItemsConfig.RewardItems == null)
-            {
-                LoggerHelper.DebugLog(Log, _config.Data, "Error: One or more required properties are null in RewardManager. Cannot proceed.");
-                return null;
-            }
-
-            return GetRandomRewardsFromList(RewardItemsConfig.RewardItems);
-        }
-
-
-        public bool AwardPlayer(ulong steamId, RewardItem rewardItem)
-        {
-            try // Dodano blok try-catch do obsługi wyjątków
-            {
-                var player = MySession.Static.Players.TryGetPlayerBySteamId(steamId);
-                if (player == null)
-                {
-                    LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Player with Steam ID not found: {steamId}");
-                    return false;
-                }
-
-                // Spróbuj znaleźć definicję przedmiotu na podstawie Id przedmiotu
-                MyDefinitionId definitionId;
-                try
-                {
-                    definitionId = new MyDefinitionId(MyObjectBuilderType.Parse(rewardItem.ItemTypeId), rewardItem.ItemSubtypeId);
-                }
-                catch
-                {
-                    LoggerHelper.DebugLog(Log, _config.Data, $"ITEM():Incorrect ID of type or subtype of item.");
-                    return false;
-                }
-
-                if (!MyDefinitionManager.Static.TryGetPhysicalItemDefinition(definitionId, out var itemDefinition))
-                {
-                    LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): It is impossible to find a definition of the subject for {rewardItem.ItemTypeId} {rewardItem.ItemSubtypeId}");
-                    return false;
-                }
-
-                // Stwórz nowy obiekt fizyczny używając definicji przedmiotu i ilości
-                MyObjectBuilder_PhysicalObject physicalObject = MyObjectBuilderSerializer.CreateNewObject(definitionId) as MyObjectBuilder_PhysicalObject;
-                if (physicalObject == null)
-                {
-                    LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): You cannot create a physical object for {definitionId}");
-                    return false;
-                }
-
-                // Pobierz inwentarz postaci
-                var character = player.Character;
-                if (character == null)
-                {
-                    LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Player {player.DisplayName} is not welded.");
-                    return false;
-                }
-                var inventory = character.GetInventory();
-                if (inventory == null)
-                {
-                    LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Unable to obtain inventory for player {player.DisplayName}.");
-                    return false;
-                }
-
-                // Sprawdź dostępność miejsca w inwentarzu
-                var itemVolume = (MyFixedPoint)(rewardItem.Amount * itemDefinition.Volume);
-                if (inventory.CurrentVolume + itemVolume > inventory.MaxVolume)
-                {
-                    LoggerHelper.DebugLog(Log, _config.Data, $"INVENTORY(): Lack of space in the player's inventory {player.DisplayName}.");
-                    return false; // Nie ma wystarczająco miejsca w inwentarzu
-                }
-
-                // Dodaj przedmiot do inwentarza gracza
-                inventory.AddItems(rewardItem.Amount, physicalObject);
-                return true; // Nagroda została przyznana
-            }
-            catch (Exception ex) // Obsługa ogólnych wyjątków, które mogłyby się pojawić
-            {
-                LoggerHelper.DebugLog(Log, _config.Data, $"ERROR(): An error occurred while awarding a player. Exception: {ex.Message}");
                 return false;
             }
+
+            // Try to find the definition of the item based on the item's ID
+            MyDefinitionId definitionId = new MyDefinitionId(MyObjectBuilderType.Parse(rewardItem.ItemTypeId), rewardItem.ItemSubtypeId);
+            if (!MyDefinitionManager.Static.TryGetPhysicalItemDefinition(definitionId, out var itemDefinition))
+            {
+                LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): Could not find item definition for {rewardItem.ItemTypeId} {rewardItem.ItemSubtypeId}");
+                return false;
+            }
+
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig);
+
+            // Create a new item using the item definition and the random amount
+            MyObjectBuilder_PhysicalObject physicalObject = MyObjectBuilderSerializer.CreateNewObject(definitionId) as MyObjectBuilder_PhysicalObject;
+
+            // Get the character's inventory
+            var character = player.Character;
+            if (character == null)
+            {
+                LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Player {player.DisplayName} is not spawned.");
+                return false;
+            }
+            var inventory = character.GetInventory();
+            if (inventory == null)
+            {
+                LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Could not get the inventory for player {player.DisplayName}.");
+                return false;
+            }
+
+            // Check available space in inventory
+            var itemVolume = (MyFixedPoint)(randomAmount * itemDefinition.Volume);
+            if (inventory.CurrentVolume + itemVolume > inventory.MaxVolume)
+            {
+                return false; // Not enough space in inventory
+            }
+
+            // Add the item to the player's inventory
+            inventory.AddItems(randomAmount, physicalObject);
+            return true; // The reward has been awarded
         }
 
 
