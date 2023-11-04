@@ -56,8 +56,6 @@ namespace VoteRewards
         private Persistent<TimeSpentRewardsConfig> _timeSpentRewardsConfig;
         public TimeSpentRewardsConfig TimeSpentRewardsConfig => _timeSpentRewardsConfig?.Data;
 
-        private Random _random = new Random();
-
         // Nowe listy do przechowywania dostępnych typów i podtypów przedmiotów
         public List<string> AvailableItemTypes { get; private set; } = new List<string>();
         public Dictionary<string, List<string>> AvailableItemSubtypes { get; private set; } = new Dictionary<string, List<string>>();
@@ -152,6 +150,9 @@ namespace VoteRewards
 
         private void UpdatePlayerTimeSpent(object state)
         {
+            // Instantiate GetRandomRewardsUtils with the required configuration instances
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig);
+
             foreach (var player in MySession.Static.Players.GetOnlinePlayers())
             {
                 var steamId = player.Id.SteamId;
@@ -163,10 +164,10 @@ namespace VoteRewards
                 _playerTimeSpent[steamId] += TimeSpan.FromMinutes(1);
 
                 // Check if the player qualifies for a reward
-                if (_playerTimeSpent[steamId].TotalMinutes >= TimeSpentRewardsConfig.RewardInterval)
+                if (_playerTimeSpent[steamId].TotalMinutes >= this.TimeSpentRewardsConfig.RewardInterval)
                 {
-                    // Get a list of rewards using the updated method
-                    List<RewardItem> rewards = GetRandomTimeSpentReward();
+                    // Get a list of rewards using the instance of getRandomRewardsUtils
+                    List<RewardItem> rewards = getRandomRewardsUtils.GetRandomTimeSpentReward();
 
                     // Remove null rewards (if any)
                     rewards.RemoveAll(item => item == null);
@@ -178,7 +179,7 @@ namespace VoteRewards
 
                         foreach (var rewardItem in rewards)
                         {
-                            bool awarded = AwardPlayer(steamId, rewardItem);  // Award the player the reward
+                            bool awarded = AwardPlayer(steamId, rewardItem); // Award the player the reward
 
                             // If the award was successful, add it to the list of successful rewards
                             if (awarded)
@@ -191,7 +192,7 @@ namespace VoteRewards
                         if (successfulRewards.Any())
                         {
                             // Send a single notification with all the rewards
-                            ChatManager.SendMessageAsOther($"{TimeSpentRewardsConfig.NotificationPrefixx}", $"Congratulations! \nYou have received:\n{string.Join("\n", successfulRewards)}\nfor your time spent on the server.", Color.Green, steamId);
+                            ChatManager.SendMessageAsOther(this.TimeSpentRewardsConfig.NotificationPrefixx, $"Congratulations! \nYou have received:\n{string.Join("\n", successfulRewards)}\nfor your time spent on the server.", Color.Green, steamId);
                         }
                     }
 
@@ -200,6 +201,7 @@ namespace VoteRewards
                 }
             }
         }
+
 
         private Persistent<T> SetupConfig<T>(string fileName, T defaultConfig) where T : new()
         {
@@ -243,43 +245,6 @@ namespace VoteRewards
             {
                 Log.Warn(e, "Configuration failed to save");
             }
-        }
-
-        public List<RewardItem> GetRandomRewardsFromList(List<RewardItem> rewardsList)
-        {
-            List<RewardItem> rewardItems = new List<RewardItem>();
-
-            // Dodajemy do listy przedmioty z 100% szansą na upadek
-            rewardItems.AddRange(rewardsList.Where(item => item.ChanceToDrop == 100));
-
-            // Dla każdego przedmiotu z szansą mniejszą niż 100%, losujemy, czy powinien zostać zwrócony
-            var rewardItemsToConsider = rewardsList.Where(item => item.ChanceToDrop < 100);
-            foreach (var item in rewardItemsToConsider)
-            {
-                int randomValue = _random.Next(0, 101);
-                if (randomValue <= item.ChanceToDrop)
-                {
-                    rewardItems.Add(item);
-                }
-            }
-
-            return rewardItems;
-        }
-
-        public List<RewardItem> GetRandomTimeSpentReward()
-        {
-            return GetRandomRewardsFromList(TimeSpentRewardsConfig.RewardsList);
-        }
-
-        public List<RewardItem> GetRandomRewards()
-        {
-            if (RewardItemsConfig == null || RewardItemsConfig.RewardItems == null)
-            {
-                Log.Error("Error: One or more required properties are null in RewardManager. Cannot proceed.");
-                return null;
-            }
-
-            return GetRandomRewardsFromList(RewardItemsConfig.RewardItems);
         }
 
 

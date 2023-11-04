@@ -48,6 +48,8 @@ namespace VoteRewards
             var steamId = Context.Player.SteamUserId;
             var identityId = Context.Player.IdentityId;
 
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig);
+
             int voteStatus;
             try
             {
@@ -73,7 +75,7 @@ namespace VoteRewards
                     break;
                 case 1:
                     // Zamiast wywoływać GetRandomReward trzy razy, wywołujemy GetRandomRewards raz, aby otrzymać wszystkie nagrody
-                    List<RewardItem> rewards = Plugin.GetRandomRewards();
+                    List<RewardItem> rewards = getRandomRewardsUtils.GetRandomRewards();
 
                     // Usuń null z listy nagród (jeśli jakiś przedmiot nie został wylosowany)
                     rewards.RemoveAll(item => item == null);
@@ -140,7 +142,8 @@ namespace VoteRewards
         [Permission(MyPromoteLevel.Admin)]  // Ustaw na Admin, aby tylko admini mogli używać tej komendy
         public void TestGetRandomReward()
         {
-            List<RewardItem> rewards = Plugin.GetRandomRewards();
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig);
+            List<RewardItem> rewards = getRandomRewardsUtils.GetRandomRewards();
 
             if (rewards.Any())
             {
