@@ -151,51 +151,55 @@ namespace VoteRewards
 
         private void UpdatePlayerTimeSpent(object state)
         {
-            var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig);
-
-            foreach (var player in MySession.Static.Players.GetOnlinePlayers())
+            try
             {
-                var steamId = player.Id.SteamId;
-                if (!_playerTimeSpent.ContainsKey(steamId))
+                var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig);
+
+                foreach (var player in MySession.Static.Players.GetOnlinePlayers())
                 {
-                    _playerTimeSpent[steamId] = TimeSpan.Zero;
-                }
-
-                _playerTimeSpent[steamId] += TimeSpan.FromMinutes(1);
-
-                if (_playerTimeSpent[steamId].TotalMinutes >= this.TimeSpentRewardsConfig.RewardInterval)
-                {
-                    List<RewardItem> rewards = getRandomRewardsUtils.GetRandomTimeSpentReward();
-                    rewards.RemoveAll(item => item == null);
-
-                    if (rewards.Any())
+                    var steamId = player.Id.SteamId;
+                    if (!_playerTimeSpent.ContainsKey(steamId))
                     {
-                        var successfulRewards = new List<string>();
+                        _playerTimeSpent[steamId] = TimeSpan.Zero;
+                    }
 
-                        foreach (var rewardItem in rewards)
+                    _playerTimeSpent[steamId] += TimeSpan.FromMinutes(1);
+
+                    if (_playerTimeSpent[steamId].TotalMinutes >= this.TimeSpentRewardsConfig.RewardInterval)
+                    {
+                        List<RewardItem> rewards = getRandomRewardsUtils.GetRandomTimeSpentReward();
+                        rewards.RemoveAll(item => item == null);
+
+                        if (rewards.Any())
                         {
-                            // Calculate the random amount here where you have the specific rewardItem
-                            int randomAmount = getRandomRewardsUtils.GetRandomAmount(rewardItem.AmountOne, rewardItem.AmountTwo);
-                            bool awarded = AwardPlayer(steamId, rewardItem, randomAmount); // Pass randomAmount to AwardPlayer
+                            var successfulRewards = new List<string>();
 
-                            if (awarded)
+                            foreach (var rewardItem in rewards)
                             {
-                                successfulRewards.Add($"{randomAmount}x {rewardItem.ItemSubtypeId}");
+                                int randomAmount = getRandomRewardsUtils.GetRandomAmount(rewardItem.AmountOne, rewardItem.AmountTwo);
+                                bool awarded = AwardPlayer(steamId, rewardItem, randomAmount);
+
+                                if (awarded)
+                                {
+                                    successfulRewards.Add($"{randomAmount}x {rewardItem.ItemSubtypeId}");
+                                }
+                            }
+
+                            if (successfulRewards.Any())
+                            {
+                                ChatManager.SendMessageAsOther(this.TimeSpentRewardsConfig.NotificationPrefixx, $"Congratulations! You have received:\n{string.Join("\n", successfulRewards)}", Color.Green, steamId);
                             }
                         }
 
-                        if (successfulRewards.Any())
-                        {
-                            ChatManager.SendMessageAsOther(this.TimeSpentRewardsConfig.NotificationPrefixx, $"Congratulations! You have received:\n{string.Join("\n", successfulRewards)}", Color.Green, steamId);
-                        }
+                        _playerTimeSpent[steamId] = TimeSpan.Zero;
                     }
-
-                    _playerTimeSpent[steamId] = TimeSpan.Zero;
                 }
             }
+            catch (Exception ex)
+            {
+                LoggerHelper.DebugLog(Log, _config.Data, $"An error occurred in UpdatePlayerTimeSpent: {ex.Message}");
+            }
         }
-
-
 
         private Persistent<T> SetupConfig<T>(string fileName, T defaultConfig) where T : new()
         {
@@ -247,10 +251,10 @@ namespace VoteRewards
             var player = MySession.Static.Players.TryGetPlayerBySteamId(steamId);
             if (player == null)
             {
+                LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Player with SteamID {steamId} not found.");
                 return false;
             }
 
-            // Try to find the definition of the item based on the item's ID
             MyDefinitionId definitionId = new MyDefinitionId(MyObjectBuilderType.Parse(rewardItem.ItemTypeId), rewardItem.ItemSubtypeId);
             if (!MyDefinitionManager.Static.TryGetPhysicalItemDefinition(definitionId, out var itemDefinition))
             {
@@ -258,18 +262,13 @@ namespace VoteRewards
                 return false;
             }
 
-            var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig);
-
-            // Create a new item using the item definition and the random amount
-            MyObjectBuilder_PhysicalObject physicalObject = MyObjectBuilderSerializer.CreateNewObject(definitionId) as MyObjectBuilder_PhysicalObject;
-
-            // Get the character's inventory
             var character = player.Character;
             if (character == null)
             {
                 LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Player {player.DisplayName} is not spawned.");
                 return false;
             }
+
             var inventory = character.GetInventory();
             if (inventory == null)
             {
@@ -277,18 +276,17 @@ namespace VoteRewards
                 return false;
             }
 
-            // Check available space in inventory
             var itemVolume = (MyFixedPoint)(randomAmount * itemDefinition.Volume);
             if (inventory.CurrentVolume + itemVolume > inventory.MaxVolume)
             {
+                LoggerHelper.DebugLog(Log, _config.Data, $"INVENTORY(): Not enough space in inventory for player {player.DisplayName}.");
                 return false; // Not enough space in inventory
             }
 
-            // Add the item to the player's inventory
+            MyObjectBuilder_PhysicalObject physicalObject = MyObjectBuilderSerializer.CreateNewObject(definitionId) as MyObjectBuilder_PhysicalObject;
             inventory.AddItems(randomAmount, physicalObject);
             return true; // The reward has been awarded
         }
-
 
         // Nowa metoda do ładowania dostępnych typów i podtypów przedmiotów
         private void LoadAvailableItemTypesAndSubtypes()
