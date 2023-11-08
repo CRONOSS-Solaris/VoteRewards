@@ -1,4 +1,4 @@
-﻿using NLog;
+using NLog;
 using NLog.Fluent;
 using Sandbox.Game;
 using Sandbox.Game.World;
