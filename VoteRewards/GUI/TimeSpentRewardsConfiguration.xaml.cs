@@ -57,11 +57,21 @@ namespace VoteRewards
             Plugin.TimeSpentRewardsConfig.RewardInterval = int.Parse(RewardIntervalTextBox.Text);
             Plugin.TimeSpentRewardsConfig.NotificationPrefixx = NotificationPrefixTextBox.Text;
 
-            // Tutaj dodaj logikę zapisywania listy nagród
+            // Sprawdzanie każdego RewardItem w liście nagród
+            foreach (var item in Plugin.TimeSpentRewardsConfig.RewardsList)
+            {
+                if (item.ChanceToDrop < 0.0 || item.ChanceToDrop > 100.0)
+                {
+                    // Wyświetlenie komunikatu o błędzie
+                    MessageBox.Show("Chance to Drop must be between 0.0 and 100.0", "Invalid Data", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return; // Przerywamy zapisywanie
+                }
+            }
 
             Plugin.Save();
             this.Close();
         }
+
 
 
         private void ItemTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

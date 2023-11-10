@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
@@ -54,7 +55,18 @@ namespace VoteRewards
 
         private void SaveButton_OnClick(object sender, RoutedEventArgs e)
         {
-            // Zapisujemy konfigurację
+            // Sprawdzanie każdego RewardItem
+            foreach (var item in Plugin.RewardItemsConfig.RewardItems)
+            {
+                if (item.ChanceToDrop < 0.0 || item.ChanceToDrop > 100.0)
+                {
+                    // Wyświetlenie komunikatu o błędzie
+                    MessageBox.Show("Chance to Drop must be between 0.0 and 100.0", "Invalid Data", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return; // Przerywamy zapisywanie
+                }
+            }
+
+            // Kontynuacja zapisywania, jeśli wszystko jest w porządku
             Plugin.Save();
             this.Close();
         }
