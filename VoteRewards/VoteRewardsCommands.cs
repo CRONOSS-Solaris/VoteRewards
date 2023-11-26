@@ -87,7 +87,7 @@ namespace VoteRewards
                             foreach (var reward in rewards)
                             {
                                 int randomAmount = getRandomRewardsUtils.GetRandomAmount(reward.AmountOne, reward.AmountTwo);
-                                bool rewardGranted = Plugin.AwardPlayer(Context.Player.SteamUserId, reward, randomAmount); // Adjust AwardPlayer to accept randomAmount
+                                bool rewardGranted = PlayerRewardManager.AwardPlayer(Context.Player.SteamUserId, reward, randomAmount, VoteRewards.Log, Plugin.Config);
                                 if (rewardGranted)
                                 {
                                     successfulRewards.Add($"{randomAmount}x {reward.ItemSubtypeId}");

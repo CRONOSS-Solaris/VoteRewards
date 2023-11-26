@@ -139,7 +139,7 @@ namespace VoteRewards
                         _multiplayerManager.PlayerLeft += OnPlayerLeft;
                     }
 
-                    LoadAvailableItemTypesAndSubtypes();
+                    ItemLoader.LoadAvailableItemTypesAndSubtypes(AvailableItemTypes, AvailableItemSubtypes, Log, Config);
                     _control.Dispatcher.Invoke(() => _control.UpdateButtonState(true));
                     break;
 
@@ -181,7 +181,7 @@ namespace VoteRewards
                             foreach (var rewardItem in rewards)
                             {
                                 int randomAmount = getRandomRewardsUtils.GetRandomAmount(rewardItem.AmountOne, rewardItem.AmountTwo);
-                                bool awarded = AwardPlayer(steamId, rewardItem, randomAmount);
+                                bool awarded = PlayerRewardManager.AwardPlayer(steamId, rewardItem, randomAmount, Log, Config);
 
                                 if (awarded)
                                 {
@@ -246,91 +246,6 @@ namespace VoteRewards
             catch (IOException e)
             {
                 Log.Warn(e, "Configuration failed to save");
-            }
-        }
-
-
-        public bool AwardPlayer(ulong steamId, RewardItem rewardItem, int randomAmount)
-        {
-            var player = MySession.Static.Players.TryGetPlayerBySteamId(steamId);
-            if (player == null)
-            {
-                LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Player with SteamID {steamId} not found.");
-                return false;
-            }
-
-            MyDefinitionId definitionId = new MyDefinitionId(MyObjectBuilderType.Parse(rewardItem.ItemTypeId), rewardItem.ItemSubtypeId);
-            if (!MyDefinitionManager.Static.TryGetPhysicalItemDefinition(definitionId, out var itemDefinition))
-            {
-                LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): Could not find item definition for {rewardItem.ItemTypeId} {rewardItem.ItemSubtypeId}");
-                return false;
-            }
-
-            var character = player.Character;
-            if (character == null)
-            {
-                LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Player {player.DisplayName} is not spawned.");
-                return false;
-            }
-
-            var inventory = character.GetInventory();
-            if (inventory == null)
-            {
-                LoggerHelper.DebugLog(Log, _config.Data, $"PLAYER(): Could not get the inventory for player {player.DisplayName}.");
-                return false;
-            }
-
-            var itemVolume = (MyFixedPoint)(randomAmount * itemDefinition.Volume);
-            if (inventory.CurrentVolume + itemVolume > inventory.MaxVolume)
-            {
-                LoggerHelper.DebugLog(Log, _config.Data, $"INVENTORY(): Not enough space in inventory for player {player.DisplayName}.");
-                return false; // Not enough space in inventory
-            }
-
-            MyObjectBuilder_PhysicalObject physicalObject = MyObjectBuilderSerializer.CreateNewObject(definitionId) as MyObjectBuilder_PhysicalObject;
-            inventory.AddItems(randomAmount, physicalObject);
-            return true; // The reward has been awarded
-        }
-
-        // Nowa metoda do ładowania dostępnych typów i podtypów przedmiotów
-        private void LoadAvailableItemTypesAndSubtypes()
-        {
-            foreach (var definition in MyDefinitionManager.Static.GetPhysicalItemDefinitions())
-            {
-                string typeId = definition.Id.TypeId.ToString();
-                string subtypeId = definition.Id.SubtypeId.String;
-
-                LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): Loading item: TypeId={typeId}, SubtypeId={subtypeId}");
-
-                if (!AvailableItemTypes.Contains(typeId))
-                {
-                    AvailableItemTypes.Add(typeId);
-                }
-
-                if (!AvailableItemSubtypes.ContainsKey(typeId))
-                {
-                    AvailableItemSubtypes[typeId] = new List<string>();
-                }
-
-                if (!AvailableItemSubtypes[typeId].Contains(subtypeId))
-                {
-                    AvailableItemSubtypes[typeId].Add(subtypeId);
-                }
-            }
-
-            // Upewniamy się, że każdy typ przedmiotu ma przypisaną listę, nawet jeśli jest pusta
-            foreach (var itemType in AvailableItemTypes)
-            {
-                if (!AvailableItemSubtypes.ContainsKey(itemType))
-                {
-                    AvailableItemSubtypes[itemType] = new List<string>();
-                }
-            }
-
-            LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): Loaded {AvailableItemTypes.Count} item types and {AvailableItemSubtypes.Count} item subtypes.");
-            foreach (var kvp in AvailableItemSubtypes)
-            {
-                LoggerHelper.DebugLog(Log, _config.Data, $"ITEM(): Type: {kvp.Key}, Subtypes: {string.Join(", ", kvp.Value)}");
             }
         }
 

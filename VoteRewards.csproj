@@ -176,7 +176,9 @@
       <DependentUpon>ItemConfiguration.xaml</DependentUpon>
     </Compile>
     <Compile Include="VoteRewards\Utils\GetRandomRewardsUtils.cs" />
+    <Compile Include="VoteRewards\Utils\ItemLoader.cs" />
     <Compile Include="VoteRewards\Utils\LoggerHelper.cs" />
+    <Compile Include="VoteRewards\Utils\PlayerRewardManager.cs" />
     <Compile Include="VoteRewards\Utils\RewardItem.cs" />
     <Compile Include="VoteRewards\GUI\VoteRewardsControl.xaml.cs">
       <DependentUpon>VoteRewardsControl.xaml</DependentUpon>
