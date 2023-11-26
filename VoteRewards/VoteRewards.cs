@@ -34,6 +34,7 @@ namespace VoteRewards
         public static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private static readonly string CONFIG_FILE_NAME = "VoteRewardsConfig.cfg";
         private static readonly string REWARD_ITEMS_CONFIG_FILE_NAME = "RewardItemsConfig.cfg";
+        private static readonly string REFERAL_CODE_CONFIG = "ReferralCode.cfg";
         public VoteApiHelper ApiHelper { get; private set; }
 
 
@@ -55,6 +56,8 @@ namespace VoteRewards
 
         private Persistent<TimeSpentRewardsConfig> _timeSpentRewardsConfig;
         public TimeSpentRewardsConfig TimeSpentRewardsConfig => _timeSpentRewardsConfig?.Data;
+        public Persistent<ReferralCodeConfig> _referralCodeConfig;
+        public ReferralCodeConfig ReferralCodeConfig => _referralCodeConfig?.Data;
 
         // Nowe listy do przechowywania dostępnych typów i podtypów przedmiotów
         public List<string> AvailableItemTypes { get; private set; } = new List<string>();
@@ -72,6 +75,7 @@ namespace VoteRewards
             _config = SetupConfig(CONFIG_FILE_NAME, new VoteRewardsConfig());
             _rewardItemsConfig = SetupConfig(REWARD_ITEMS_CONFIG_FILE_NAME, new RewardItemsConfig());
             _timeSpentRewardsConfig = SetupConfig("TimeSpentRewardsConfig.cfg", new TimeSpentRewardsConfig());
+            _referralCodeConfig = SetupConfig(REFERAL_CODE_CONFIG, new ReferralCodeConfig());
             ApiHelper = new VoteApiHelper(Config.ServerApiKey);
 
 
