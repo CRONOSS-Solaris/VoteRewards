@@ -17,12 +17,14 @@ namespace VoteRewards.Utils
         // Instances of configurations passed through the constructor
         private readonly RewardItemsConfig _rewardItemsConfig;
         private readonly TimeSpentRewardsConfig _timeSpentRewardsConfig;
+        private readonly RefferalCodeReward _refferalCodeReward;
 
         // Constructor to pass in instances of configurations
-        public GetRandomRewardsUtils(RewardItemsConfig rewardItemsConfig, TimeSpentRewardsConfig timeSpentRewardsConfig)
+        public GetRandomRewardsUtils(RewardItemsConfig rewardItemsConfig, TimeSpentRewardsConfig timeSpentRewardsConfig, RefferalCodeReward refferalCodeReward)
         {
             _rewardItemsConfig = rewardItemsConfig ?? throw new ArgumentNullException(nameof(rewardItemsConfig));
             _timeSpentRewardsConfig = timeSpentRewardsConfig ?? throw new ArgumentNullException(nameof(timeSpentRewardsConfig));
+            _refferalCodeReward = refferalCodeReward ?? throw new ArgumentNullException(nameof(refferalCodeReward));
         }
 
         // Method to get random rewards from a given list of rewards

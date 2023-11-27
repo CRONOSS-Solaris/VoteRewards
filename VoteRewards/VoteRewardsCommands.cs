@@ -48,7 +48,7 @@ namespace VoteRewards
             var steamId = Context.Player.SteamUserId;
             var identityId = Context.Player.IdentityId;
 
-            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig);
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig, Plugin.RefferalCodeReward);
 
             int voteStatus;
             try

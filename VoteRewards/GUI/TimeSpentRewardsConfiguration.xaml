@@ -124,7 +124,7 @@
                 </DataGridTemplateColumn>
                 <DataGridTextColumn Header="Amount One (from)" Binding="{Binding AmountOne}" IsReadOnly="False" />
                 <DataGridTextColumn Header="Amount Two (to)" Binding="{Binding AmountTwo}" IsReadOnly="False" />
-                <DataGridTextColumn Header="Chance to Drop" Binding="{Binding ChanceToDrop}" IsReadOnly="False" />
+                <DataGridTextColumn Header="Chance to Drop (%)" Binding="{Binding ChanceToDrop}" IsReadOnly="False" />
             </DataGrid.Columns>
         </DataGrid>
 

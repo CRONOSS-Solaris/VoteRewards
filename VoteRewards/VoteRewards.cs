@@ -1,13 +1,10 @@
 using NLog;
-using Sandbox.Definitions;  // Importujemy, aby móc używać MyPhysicalItemDefinition
-using Sandbox.Game.Entities;
 using Sandbox.Game.World;
 using System;
 using System.Collections.Generic;  // Importujemy, aby móc używać list
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using Torch;
@@ -18,12 +15,7 @@ using Torch.API.Session;
 using Torch.Session;
 using VoteRewards.Config;
 using VoteRewards.Utils;
-using VRage;
-using VRage.Game;  // Importujemy, aby móc używać MyDefinitionManager
-using VRage.ObjectBuilders;
-using System.Threading;
 using VRageMath;
-using VRage.Plugins;
 
 namespace VoteRewards
 {
@@ -34,7 +26,6 @@ namespace VoteRewards
         public static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private static readonly string CONFIG_FILE_NAME = "VoteRewardsConfig.cfg";
         private static readonly string REWARD_ITEMS_CONFIG_FILE_NAME = "RewardItemsConfig.cfg";
-        private static readonly string REFERAL_CODE_CONFIG = "ReferralCode.cfg";
         public VoteApiHelper ApiHelper { get; private set; }
 
 
@@ -56,8 +47,10 @@ namespace VoteRewards
 
         private Persistent<TimeSpentRewardsConfig> _timeSpentRewardsConfig;
         public TimeSpentRewardsConfig TimeSpentRewardsConfig => _timeSpentRewardsConfig?.Data;
-        public Persistent<ReferralCodeConfig> _referralCodeConfig;
-        public ReferralCodeConfig ReferralCodeConfig => _referralCodeConfig?.Data;
+        private ReferralCodeManager _referralCodeManager;
+        public ReferralCodeManager ReferralCodeManager => _referralCodeManager;
+        private Persistent<RefferalCodeReward> _refferalCodeReward;
+        public RefferalCodeReward RefferalCodeReward => _refferalCodeReward?.Data;
 
         // Nowe listy do przechowywania dostępnych typów i podtypów przedmiotów
         public List<string> AvailableItemTypes { get; private set; } = new List<string>();
@@ -75,7 +68,9 @@ namespace VoteRewards
             _config = SetupConfig(CONFIG_FILE_NAME, new VoteRewardsConfig());
             _rewardItemsConfig = SetupConfig(REWARD_ITEMS_CONFIG_FILE_NAME, new RewardItemsConfig());
             _timeSpentRewardsConfig = SetupConfig("TimeSpentRewardsConfig.cfg", new TimeSpentRewardsConfig());
-            _referralCodeConfig = SetupConfig(REFERAL_CODE_CONFIG, new ReferralCodeConfig());
+            _refferalCodeReward = SetupConfig("ReferralCodeReward.cfg", new RefferalCodeReward());
+            string referralCodeFilePath = Path.Combine(StoragePath, "VoteReward", "ReferralCodes.json");
+            _referralCodeManager = new ReferralCodeManager(referralCodeFilePath, _config.Data);
             ApiHelper = new VoteApiHelper(Config.ServerApiKey);
 
 
@@ -157,7 +152,7 @@ namespace VoteRewards
         {
             try
             {
-                var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig);
+                var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig, this.RefferalCodeReward);
 
                 foreach (var player in MySession.Static.Players.GetOnlinePlayers())
                 {
@@ -241,6 +236,7 @@ namespace VoteRewards
             {
                 _config.Save();
                 _rewardItemsConfig.Save();
+                _refferalCodeReward.Save();
                 Log.Info("Configuration Saved.");
             }
             catch (IOException e)
