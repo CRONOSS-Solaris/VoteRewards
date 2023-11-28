@@ -34,7 +34,7 @@ namespace VoteRewards
 
             if (!Config.IsReferralCodeEnabled)
             {
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "Referral code function is disabled", Color.Red, Context.Player.SteamUserId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "Referral code function is disabled", Color.Red, Context.Player.SteamUserId);
                 return;
             }
 
@@ -42,7 +42,7 @@ namespace VoteRewards
             if (remainingCooldown > TimeSpan.Zero)
             {
                 int remainingMinutes = (int)Math.Ceiling(remainingCooldown.TotalMinutes);
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", $"You must wait {remainingMinutes} minute(s) before creating another code.", Color.Red, Context.Player.SteamUserId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", $"You must wait {remainingMinutes} minute(s) before creating another code.", Color.Red, Context.Player.SteamUserId);
                 return;
             }
 
@@ -66,11 +66,11 @@ namespace VoteRewards
             if (generatedCodes.Count > 0)
             {
                 string codesMessage = string.Join(", ", generatedCodes);
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", $"Your new referral codes are: {codesMessage}", Color.Green, Context.Player.SteamUserId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", $"Your new referral codes are: {codesMessage}", Color.Green, Context.Player.SteamUserId);
             }
             else
             {
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", $"Cannot create new referral codes. You may have reached the limit of {Config.MaxReferralCodes} codes.", Color.Red, Context.Player.SteamUserId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", $"Cannot create new referral codes. You may have reached the limit of {Config.MaxReferralCodes} codes.", Color.Red, Context.Player.SteamUserId);
             }
         }
 
@@ -88,7 +88,7 @@ namespace VoteRewards
 
             if (!Config.IsReferralCodeEnabled)
             {
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "Referral code function is disabled", Color.Red, Context.Player.SteamUserId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "Referral code function is disabled", Color.Red, Context.Player.SteamUserId);
                 return;
             }
 
@@ -115,26 +115,26 @@ namespace VoteRewards
 
                         if (rewardMessages.Any())
                         {
-                            VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "You received:\n" + string.Join("\n", rewardMessages), Color.Green, Context.Player.SteamUserId);
+                            VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "You received:\n" + string.Join("\n", rewardMessages), Color.Green, Context.Player.SteamUserId);
                         }
                         else
                         {
-                            VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "Your inventory is full. Please make space to receive your reward.", Color.Red, Context.Player.SteamUserId);
+                            VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "Your inventory is full. Please make space to receive your reward.", Color.Red, Context.Player.SteamUserId);
                         }
                     }
                     else
                     {
-                        VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "No reward available at the moment. Please try again later.", Color.Red, Context.Player.SteamUserId);
+                        VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "No reward available at the moment. Please try again later.", Color.Red, Context.Player.SteamUserId);
                     }
                     break;
                 case ReferralCodeManager.RedeemCodeResult.CodeNotFound:
-                    VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "No such code found or already used", Color.Red, Context.Player.SteamUserId);
+                    VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "No such code found or already used", Color.Red, Context.Player.SteamUserId);
                     break;
                 case ReferralCodeManager.RedeemCodeResult.CannotUseOwnCode:
-                    VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "You cannot use your own referral code", Color.Red, Context.Player.SteamUserId);
+                    VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "You cannot use your own referral code", Color.Red, Context.Player.SteamUserId);
                     break;
                 case ReferralCodeManager.RedeemCodeResult.AlreadyUsed:
-                    VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "You have already used a referral code and cannot use another.", Color.Red, Context.Player.SteamUserId);
+                    VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "You have already used a referral code and cannot use another.", Color.Red, Context.Player.SteamUserId);
                     break;
             }
         }
@@ -154,12 +154,12 @@ namespace VoteRewards
             var codes = ReferralCodeManager.GetReferralCodesForPlayer(steamId);
             if (codes.Count == 0)
             {
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "You have no referral codes.", Color.Red, steamId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "You have no referral codes.", Color.Red, steamId);
             }
             else
             {
                 string codesMessage = string.Join(", ", codes);
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", $"Your referral codes are: {codesMessage}", Color.Green, steamId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", $"Your referral codes are: {codesMessage}", Color.Green, steamId);
             }
         }
 
@@ -178,28 +178,28 @@ namespace VoteRewards
 
             if (!Config.IsReferralCodeEnabled)
             {
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "Referral code function is disabled", Color.Red, Context.Player.SteamUserId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "Referral code function is disabled", Color.Red, Context.Player.SteamUserId);
                 return;
             }
 
             var referralCode = ReferralCodeManager.GetReferralCode(steamId);
             if (referralCode == null)
             {
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "You do not have any referral codes.", Color.Red, steamId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "You do not have any referral codes.", Color.Red, steamId);
                 return;
             }
 
             int totalUses = referralCode.CodeUsageCount;
             if (totalUses == 0)
             {
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "Your referral codes have not been used.", Color.Red, steamId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "Your referral codes have not been used.", Color.Red, steamId);
                 return;
             }
 
             if (!numberOfAwards.HasValue)
             {
                 // Pokazuje liczbę dostępnych nagród i instrukcje w osobnych liniach
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", $"Available rewards: {totalUses}.\nTo claim, type '!referral award [number]'.", Color.Green, steamId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", $"Available rewards: {totalUses}.\nTo claim, type '!referral award [number]'.", Color.Green, steamId);
                 return;
             }
 
@@ -225,11 +225,11 @@ namespace VoteRewards
 
             if (rewardMessages.Any())
             {
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "You received:\n" + string.Join("\n", rewardMessages), Color.Green, Context.Player.SteamUserId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "You received:\n" + string.Join("\n", rewardMessages), Color.Green, Context.Player.SteamUserId);
             }
             else
             {
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "No reward available at the moment. Please try again later.", Color.Red, Context.Player.SteamUserId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "No reward available at the moment. Please try again later.", Color.Red, Context.Player.SteamUserId);
             }
 
             // Aktualizacja licznika użycia kodu po przyznaniu nagród
@@ -252,7 +252,7 @@ namespace VoteRewards
 
             if (!Config.IsReferralCodeEnabled)
             {
-                VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "Referral code function is disabled", Color.Red, Context.Player.SteamUserId);
+                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "Referral code function is disabled", Color.Red, Context.Player.SteamUserId);
                 return;
             }
 
@@ -279,20 +279,20 @@ namespace VoteRewards
 
                         if (rewardMessages.Any())
                         {
-                            VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "You received:\n" + string.Join("\n", rewardMessages), Color.Green, Context.Player.SteamUserId);
+                            VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "You received:\n" + string.Join("\n", rewardMessages), Color.Green, Context.Player.SteamUserId);
                         }
                         else
                         {
-                            VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "Your inventory is full. Please make space to receive your reward.", Color.Red, Context.Player.SteamUserId);
+                            VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "Your inventory is full. Please make space to receive your reward.", Color.Red, Context.Player.SteamUserId);
                         }
                     }
                     else
                     {
-                        VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "No reward available at the moment. Please try again later.", Color.Red, Context.Player.SteamUserId);
+                        VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "No reward available at the moment. Please try again later.", Color.Red, Context.Player.SteamUserId);
                     }
                     break;
                 case ReferralCodeManager.RedeemCodeResult.CodeNotFound:
-                    VoteRewards.ChatManager.SendMessageAsOther("REFERRAL CODE", "No such code found or already used", Color.Red, Context.Player.SteamUserId);
+                    VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "No such code found or already used", Color.Red, Context.Player.SteamUserId);
                     break;
                     // Obsługa innych przypadków, jeśli to potrzebne
             }
