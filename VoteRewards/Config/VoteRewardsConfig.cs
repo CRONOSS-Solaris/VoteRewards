@@ -1,4 +1,5 @@
 ﻿using Torch;
+using VRage.Game.ModAPI;
 
 namespace VoteRewards
 {
@@ -16,13 +17,16 @@ namespace VoteRewards
         private int _commandCooldownMinutes = 60;
         private string _referralCodePrefix = "REFERRAL CODE";
 
-        public bool DebugMode 
-        {
-            get => _debugMode; 
-            set => SetValue(ref _debugMode, value); 
-        }
+        //Event Code
+        private bool _isEventCodeEnabled = false;
+        private string _eventCodePrefix = "EVENT CODE";
 
         //VoteReward
+        public bool DebugMode
+        {
+            get => _debugMode;
+            set => SetValue(ref _debugMode, value);
+        }
         public string ServerApiKey
         {
             get => _serverApiKey;
@@ -63,7 +67,19 @@ namespace VoteRewards
             get => _referralCodePrefix;
             set => SetValue(ref _referralCodePrefix, value);
         }
-    }
 
+        //Event Code
+        public bool IsEventCodeEnabled
+        {
+            get => _isEventCodeEnabled;
+            set => SetValue(ref _isEventCodeEnabled, value);
+        }
+
+        public string EventCodePrefix
+        {
+            get => _eventCodePrefix;
+            set => SetValue(ref _eventCodePrefix, value);
+        }
+    }
 
 }

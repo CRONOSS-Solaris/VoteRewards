@@ -169,9 +169,14 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="VoteRewards\Commands\EventCodeCommands.cs" />
+    <Compile Include="VoteRewards\Config\EventCodeReward.cs" />
     <Compile Include="VoteRewards\Config\RefferalCodeReward.cs" />
     <Compile Include="VoteRewards\Config\RewardItemsConfig.cs" />
     <Compile Include="VoteRewards\Config\TimeSpentRewardsConfig.cs" />
+    <Compile Include="VoteRewards\GUI\EventCodeItemConfiguration.xaml.cs">
+      <DependentUpon>EventCodeItemConfiguration.xaml</DependentUpon>
+    </Compile>
     <Compile Include="VoteRewards\GUI\ReferralItemConfiguration.xaml.cs">
       <DependentUpon>ReferralItemConfiguration.xaml</DependentUpon>
     </Compile>
@@ -181,7 +186,9 @@
     <Compile Include="VoteRewards\GUI\ItemConfiguration.xaml.cs">
       <DependentUpon>ItemConfiguration.xaml</DependentUpon>
     </Compile>
-    <Compile Include="VoteRewards\ReferralCodeCommands.cs" />
+    <Compile Include="VoteRewards\Commands\ReferralCodeCommands.cs" />
+    <Compile Include="VoteRewards\Utils\EventCode.cs" />
+    <Compile Include="VoteRewards\Utils\EventCodeManager.cs" />
     <Compile Include="VoteRewards\Utils\GetRandomRewardsUtils.cs" />
     <Compile Include="VoteRewards\Utils\ItemLoader.cs" />
     <Compile Include="VoteRewards\Utils\LoggerHelper.cs" />
@@ -206,7 +213,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="VoteRewards\Utils\VoteApiHelper.cs" />
-    <Compile Include="VoteRewards\VoteRewardsCommands.cs" />
+    <Compile Include="VoteRewards\Commands\VoteRewardsCommands.cs" />
     <Compile Include="VoteRewards\Config\VoteRewardsConfig.cs" />
     <Compile Include="VoteRewards\VoteRewards.cs" />
     <EmbeddedResource Include="VoteRewards\Properties\Resources.resx">
@@ -222,6 +229,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="VoteRewards\GUI\EventCodeItemConfiguration.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="VoteRewards\GUI\ReferralItemConfiguration.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

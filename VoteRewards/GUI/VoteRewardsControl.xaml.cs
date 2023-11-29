@@ -11,6 +11,7 @@ namespace VoteRewards
         private ItemConfiguration _itemConfigurationWindow;
         private TimeSpentRewardsConfiguration _timeSpentRewardsConfigurationWindow;
         private ReferralItemConfiguration _referralItemConfiguration;
+        private EventCodeItemConfiguration _eventCodeItemConfiguration;
 
         private VoteRewardsControl()
         {
@@ -92,6 +93,38 @@ namespace VoteRewards
             }
         }
 
+        private void OpenEventCodeItemConfiguration_Click(object sender, RoutedEventArgs e)
+        {
+            // Sprawdzamy, czy okno jest już otwarte
+            if (_eventCodeItemConfiguration == null)
+            {
+                // Tworzymy nowy wątek STA do otwarcia okna
+                Thread thread = new Thread(() =>
+                {
+                    _eventCodeItemConfiguration = new EventCodeItemConfiguration(Plugin);
+                    _eventCodeItemConfiguration.Closed += (s, args) => _eventCodeItemConfiguration = null;
+                    _eventCodeItemConfiguration.Show();
+
+                    // Rozpoczynamy pętlę zdarzeń dla tego wątku
+                    System.Windows.Threading.Dispatcher.Run();
+                });
+
+                // Ustawiamy wątek jako STA
+                thread.SetApartmentState(ApartmentState.STA);
+
+                // Rozpoczynamy wątek
+                thread.Start();
+            }
+            else
+            {
+                // Jeśli okno jest już otwarte, przenosimy je na wierzch
+                _eventCodeItemConfiguration.Dispatcher.Invoke(() =>
+                {
+                    _eventCodeItemConfiguration.Activate();
+                });
+            }
+        }
+
         private void OpenTimeSpentRewardsConfigurationButton_Click(object sender, RoutedEventArgs e)
         {
             if (_timeSpentRewardsConfigurationWindow == null)
@@ -121,9 +154,11 @@ namespace VoteRewards
         {
             OpenItemConfigurationButton.IsEnabled = isEnabled;
             OpenTimeSpentRewardsConfigurationButton.IsEnabled = isEnabled;
-            OpenRewardConfiguration.IsEnabled = isEnabled;
+            OpenReferralRewardConfig.IsEnabled = isEnabled;
+            EventCodeRewardConfiguration.IsEnabled = isEnabled;
             ServerStatusMessage.Visibility = isEnabled ? Visibility.Collapsed : Visibility.Visible;
             ServerStatusMessage2.Visibility = isEnabled ? Visibility.Collapsed : Visibility.Visible;
+            ServerStatusMessage3.Visibility = isEnabled ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void SupportButton_OnClick(object sender, RoutedEventArgs e)

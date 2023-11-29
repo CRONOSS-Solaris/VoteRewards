@@ -49,8 +49,12 @@ namespace VoteRewards
         public TimeSpentRewardsConfig TimeSpentRewardsConfig => _timeSpentRewardsConfig?.Data;
         private ReferralCodeManager _referralCodeManager;
         public ReferralCodeManager ReferralCodeManager => _referralCodeManager;
+        private EventCodeManager _eventCodeManager;
+        public EventCodeManager EventCodeManager => _eventCodeManager;
         private Persistent<RefferalCodeReward> _refferalCodeReward;
         public RefferalCodeReward RefferalCodeReward => _refferalCodeReward?.Data;
+        private Persistent<EventCodeReward> _eventCodeReward;
+        public EventCodeReward EventCodeReward => _eventCodeReward?.Data;
 
         // Nowe listy do przechowywania dostępnych typów i podtypów przedmiotów
         public List<string> AvailableItemTypes { get; private set; } = new List<string>();
@@ -69,8 +73,11 @@ namespace VoteRewards
             _rewardItemsConfig = SetupConfig(REWARD_ITEMS_CONFIG_FILE_NAME, new RewardItemsConfig());
             _timeSpentRewardsConfig = SetupConfig("TimeSpentRewardsConfig.cfg", new TimeSpentRewardsConfig());
             _refferalCodeReward = SetupConfig("ReferralCodeReward.cfg", new RefferalCodeReward());
+            _eventCodeReward = SetupConfig("EventCodeReward.cfg", new EventCodeReward());
             string referralCodeFilePath = Path.Combine(StoragePath, "VoteReward", "ReferralCodes.json");
             _referralCodeManager = new ReferralCodeManager(referralCodeFilePath, _config.Data);
+            string EventCodeFilePath = Path.Combine(StoragePath, "VoteReward", "EventCodes.json");
+            _eventCodeManager = new EventCodeManager(EventCodeFilePath, _config.Data);
             ApiHelper = new VoteApiHelper(Config.ServerApiKey);
 
 
@@ -237,11 +244,20 @@ namespace VoteRewards
                 _config.Save();
                 _rewardItemsConfig.Save();
                 _refferalCodeReward.Save();
+                _eventCodeReward.Save();
                 Log.Info("Configuration Saved.");
             }
             catch (IOException e)
             {
-                Log.Warn(e, "Configuration failed to save");
+                Log.Warn("An IOException occurred while saving the configuration (It is recommended to enable debugging systems and call save again)");
+                LoggerHelper.DebugLog(Log, _config.Data, $"Error message: {e.Message}");
+                LoggerHelper.DebugLog(Log, _config.Data, $"Stack trace: {e.StackTrace}");
+
+                if (e.InnerException != null)
+                {
+                    LoggerHelper.DebugLog(Log, _config.Data, $"Inner exception message: {e.InnerException.Message}");
+                    LoggerHelper.DebugLog(Log, _config.Data, $"Inner exception stack trace: {e.InnerException.StackTrace}");
+                }
             }
         }
 
