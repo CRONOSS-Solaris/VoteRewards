@@ -19,7 +19,7 @@ using VRageMath;
 
 namespace VoteRewards
 {
-    public class VoteRewards : TorchPluginBase, IWpfPlugin
+    public class VoteRewardsMain : TorchPluginBase, IWpfPlugin
     {
 
         public static IChatManagerServer ChatManager => TorchBase.Instance.CurrentSession.Managers.GetManager<IChatManagerServer>();

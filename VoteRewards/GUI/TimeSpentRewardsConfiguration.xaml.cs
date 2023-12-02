@@ -10,9 +10,9 @@ namespace VoteRewards
 {
     public partial class TimeSpentRewardsConfiguration : Window
     {
-        public VoteRewards Plugin { get; private set; }
+        public VoteRewardsMain Plugin { get; private set; }
 
-        public TimeSpentRewardsConfiguration(VoteRewards plugin)
+        public TimeSpentRewardsConfiguration(VoteRewardsMain plugin)
         {
             InitializeComponent();
             Plugin = plugin;

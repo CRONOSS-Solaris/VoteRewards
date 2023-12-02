@@ -15,9 +15,9 @@ namespace VoteRewards
     [Category("event")]
     public class EventCodeCommands : CommandModule
     {
-        private EventCodeManager EventCodeManager => ((VoteRewards)Context.Plugin).EventCodeManager;
-        private VoteRewardsConfig Config => ((VoteRewards)Context.Plugin).Config;
-        public VoteRewards Plugin => (VoteRewards)Context.Plugin;
+        private EventCodeManager EventCodeManager => ((VoteRewardsMain)Context.Plugin).EventCodeManager;
+        private VoteRewardsConfig Config => ((VoteRewardsMain)Context.Plugin).Config;
+        public VoteRewardsMain Plugin => (VoteRewardsMain)Context.Plugin;
         public static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         [Command("create", "Creates an Event code.")]
@@ -33,19 +33,19 @@ namespace VoteRewards
             // Sprawdzamy, czy funkcja kodów wydarzeniowych jest włączona
             if (!Config.IsEventCodeEnabled)
             {
-                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "Event code function is disabled", Color.Red, Context.Player.SteamUserId);
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "Event code function is disabled", Color.Red, Context.Player.SteamUserId);
                 return;
             }
 
             try
             {
                 string newCode = EventCodeManager.CreateEventCode(maxUsageCount);
-                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", $"Event code created: {newCode}", Color.Green, Context.Player.SteamUserId);
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", $"Event code created: {newCode}", Color.Green, Context.Player.SteamUserId);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error occurred while creating an event code.");
-                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "Failed to create event code.", Color.Red, Context.Player.SteamUserId);
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "Failed to create event code.", Color.Red, Context.Player.SteamUserId);
             }
         }
 
@@ -62,7 +62,7 @@ namespace VoteRewards
             // Sprawdzamy, czy funkcja kodów wydarzeniowych jest włączona
             if (!Config.IsEventCodeEnabled)
             {
-                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "Event code function is disabled", Color.Red, Context.Player.SteamUserId);
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "Event code function is disabled", Color.Red, Context.Player.SteamUserId);
                 return;
             }
 
@@ -84,7 +84,7 @@ namespace VoteRewards
                         foreach (var reward in rewards)
                         {
                             int randomAmount = new Random().Next(reward.AmountOne, reward.AmountTwo + 1);
-                            bool rewardGranted = PlayerRewardManager.AwardPlayer(Context.Player.SteamUserId, reward, randomAmount, VoteRewards.Log, Plugin.Config);
+                            bool rewardGranted = PlayerRewardManager.AwardPlayer(Context.Player.SteamUserId, reward, randomAmount, VoteRewardsMain.Log, Plugin.Config);
                             if (rewardGranted)
                             {
                                 rewardMessages.Add($"{randomAmount}x {reward.ItemSubtypeId}");
@@ -93,27 +93,27 @@ namespace VoteRewards
 
                         if (rewardMessages.Any())
                         {
-                            VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "You received:\n" + string.Join("\n", rewardMessages), Color.Green, Context.Player.SteamUserId);
+                            VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "You received:\n" + string.Join("\n", rewardMessages), Color.Green, Context.Player.SteamUserId);
                         }
                         else
                         {
-                            VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "Your inventory is full. Please make space to receive your reward.", Color.Red, Context.Player.SteamUserId);
+                            VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "Your inventory is full. Please make space to receive your reward.", Color.Red, Context.Player.SteamUserId);
                         }
                     }
                     else
                     {
-                        VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "No reward available at the moment. Please try again later.", Color.Red, Context.Player.SteamUserId);
+                        VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "No reward available at the moment. Please try again later.", Color.Red, Context.Player.SteamUserId);
                     }
                 }
                 else
                 {
-                    VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", $"Failed to redeem event code or code already used.", Color.Red, Context.Player.SteamUserId);
+                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", $"Failed to redeem event code or code already used.", Color.Red, Context.Player.SteamUserId);
                 }
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error occurred while redeeming an event code.");
-                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "Error occurred while redeeming the code.", Color.Red, Context.Player.SteamUserId);
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "Error occurred while redeeming the code.", Color.Red, Context.Player.SteamUserId);
             }
         }
 

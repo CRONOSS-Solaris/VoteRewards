@@ -11,9 +11,9 @@ namespace VoteRewards
 {
     public partial class ItemConfiguration : Window
     {
-        public VoteRewards Plugin { get; private set; }
+        public VoteRewardsMain Plugin { get; private set; }
 
-        public ItemConfiguration(VoteRewards plugin)
+        public ItemConfiguration(VoteRewardsMain plugin)
         {
             InitializeComponent();
             Plugin = plugin;

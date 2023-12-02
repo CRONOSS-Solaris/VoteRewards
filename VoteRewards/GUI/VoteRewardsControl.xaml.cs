@@ -7,7 +7,7 @@ namespace VoteRewards
 {
     public partial class VoteRewardsControl : UserControl
     {
-        private VoteRewards Plugin { get; }
+        private VoteRewardsMain Plugin { get; }
         private ItemConfiguration _itemConfigurationWindow;
         private TimeSpentRewardsConfiguration _timeSpentRewardsConfigurationWindow;
         private ReferralItemConfiguration _referralItemConfiguration;
@@ -18,7 +18,7 @@ namespace VoteRewards
             InitializeComponent();
         }
 
-        public VoteRewardsControl(VoteRewards plugin) : this()
+        public VoteRewardsControl(VoteRewardsMain plugin) : this()
         {
             Plugin = plugin;
             DataContext = plugin.Config;

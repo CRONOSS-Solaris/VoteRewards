@@ -11,9 +11,9 @@ namespace VoteRewards
 {
     public partial class EventCodeItemConfiguration : Window
     {
-        public VoteRewards Plugin { get; private set; }
+        public VoteRewardsMain Plugin { get; private set; }
 
-        public EventCodeItemConfiguration(VoteRewards plugin)
+        public EventCodeItemConfiguration(VoteRewardsMain plugin)
         {
             InitializeComponent();
             Plugin = plugin;

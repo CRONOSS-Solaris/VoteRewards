@@ -11,9 +11,9 @@ namespace VoteRewards
 {
     public partial class ReferralItemConfiguration : Window
     {
-        public VoteRewards Plugin { get; private set; }
+        public VoteRewardsMain Plugin { get; private set; }
 
-        public ReferralItemConfiguration(VoteRewards plugin)
+        public ReferralItemConfiguration(VoteRewardsMain plugin)
         {
             InitializeComponent();
             Plugin = plugin;
