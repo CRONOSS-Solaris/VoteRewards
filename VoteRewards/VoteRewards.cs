@@ -242,6 +242,7 @@ namespace VoteRewards
             try
             {
                 _config.Save();
+                _timeSpentRewardsConfig.Save();
                 _rewardItemsConfig.Save();
                 _refferalCodeReward.Save();
                 _eventCodeReward.Save();
