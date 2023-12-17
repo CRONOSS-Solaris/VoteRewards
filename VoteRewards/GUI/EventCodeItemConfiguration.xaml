@@ -1,4 +1,4 @@
-﻿<Window x:Class="VoteRewards.ItemConfiguration"
+﻿<Window x:Class="VoteRewards.EventCodeItemConfiguration"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -26,7 +26,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Text="VoteRewards Item Configuration" FontWeight="Bold" FontSize="16" Margin="5"/>
+        <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Text="Event Code Reward Configuration" FontWeight="Bold" FontSize="16" Margin="5"/>
 
         <DataGrid x:Name="RewardItemsDataGrid" Grid.Column="0" Grid.Row="1" AutoGenerateColumns="False" Margin="5" >
             <DataGrid.Columns>

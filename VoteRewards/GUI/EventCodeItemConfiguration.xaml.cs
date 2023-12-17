@@ -9,11 +9,11 @@ using VoteRewards.Utils;
 
 namespace VoteRewards
 {
-    public partial class ItemConfiguration : Window
+    public partial class EventCodeItemConfiguration : Window
     {
         public VoteRewardsMain Plugin { get; private set; }
 
-        public ItemConfiguration(VoteRewardsMain plugin)
+        public EventCodeItemConfiguration(VoteRewardsMain plugin)
         {
             InitializeComponent();
             Plugin = plugin;
@@ -22,7 +22,7 @@ namespace VoteRewards
             DataContext = plugin;
 
             // Ustawiamy źródło danych DataGrid
-            RewardItemsDataGrid.ItemsSource = Plugin.RewardItemsConfig.RewardItems;
+            RewardItemsDataGrid.ItemsSource = Plugin.EventCodeReward.RewardItems;
         }
 
 
@@ -31,7 +31,7 @@ namespace VoteRewards
         {
             // Tworzymy nowy obiekt RewardItem i dodajemy go do listy
             var newItem = new RewardItem();
-            Plugin.RewardItemsConfig.RewardItems.Add(newItem);
+            Plugin.EventCodeReward.RewardItems.Add(newItem);
 
             // Odświeżamy DataGrid
             RewardItemsDataGrid.Items.Refresh();
@@ -47,7 +47,7 @@ namespace VoteRewards
                 return;
 
             // Usuwamy zaznaczony przedmiot z listy
-            Plugin.RewardItemsConfig.RewardItems.Remove(selectedItem);
+            Plugin.EventCodeReward.RewardItems.Remove(selectedItem);
 
             // Odświeżamy DataGrid
             RewardItemsDataGrid.Items.Refresh();
@@ -56,7 +56,7 @@ namespace VoteRewards
         private void SaveButton_OnClick(object sender, RoutedEventArgs e)
         {
             // Sprawdzanie każdego RewardItem
-            foreach (var item in Plugin.RewardItemsConfig.RewardItems)
+            foreach (var item in Plugin.EventCodeReward.RewardItems)
             {
                 if (item.ChanceToDrop < 0.0 || item.ChanceToDrop > 100.0)
                 {

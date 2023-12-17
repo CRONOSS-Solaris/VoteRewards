@@ -21,7 +21,7 @@ namespace VoteRewards
     public class VoteRewardsCommands : CommandModule
     {
 
-        public VoteRewards Plugin => (VoteRewards)Context.Plugin;
+        public VoteRewardsMain Plugin => (VoteRewardsMain)Context.Plugin;
 
         [Command("vote", "Directs the player to the voting page.")]
         [Permission(MyPromoteLevel.None)]
@@ -38,7 +38,7 @@ namespace VoteRewards
             // Otwarcie Steam Overlay z URL do głosowania
             MyVisualScriptLogicProvider.OpenSteamOverlay(steamOverlayUrl, Context.Player.Identity.IdentityId);
 
-            VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Please vote for us at: {voteUrl}", Color.Green, Context.Player.SteamUserId);
+            VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Please vote for us at: {voteUrl}", Color.Green, Context.Player.SteamUserId);
         }
 
         [Command("reward", "Allows the player to claim their vote reward.")]
@@ -48,7 +48,7 @@ namespace VoteRewards
             var steamId = Context.Player.SteamUserId;
             var identityId = Context.Player.IdentityId;
 
-            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig);
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig, Plugin.RefferalCodeReward);
 
             int voteStatus;
             try
@@ -57,8 +57,8 @@ namespace VoteRewards
             }
             catch (Exception ex)
             {
-                VoteRewards.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to check your vote status. Please try again later.", Color.Green, Context.Player.SteamUserId);
-                VoteRewards.Log.Warn("Failed to check the vote status: " + ex.Message);
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to check your vote status. Please try again later.", Color.Green, Context.Player.SteamUserId);
+                VoteRewardsMain.Log.Warn("Failed to check the vote status: " + ex.Message);
                 return;
             }
 
@@ -87,15 +87,15 @@ namespace VoteRewards
                             foreach (var reward in rewards)
                             {
                                 int randomAmount = getRandomRewardsUtils.GetRandomAmount(reward.AmountOne, reward.AmountTwo);
-                                bool rewardGranted = Plugin.AwardPlayer(Context.Player.SteamUserId, reward, randomAmount); // Adjust AwardPlayer to accept randomAmount
+                                bool rewardGranted = PlayerRewardManager.AwardPlayer(Context.Player.SteamUserId, reward, randomAmount, VoteRewardsMain.Log, Plugin.Config);
                                 if (rewardGranted)
                                 {
                                     successfulRewards.Add($"{randomAmount}x {reward.ItemSubtypeId}");
-                                    VoteRewards.Log.Info($"Player {steamId} received {randomAmount} of {reward.ItemSubtypeId}.");
+                                    VoteRewardsMain.Log.Info($"Player {steamId} received {randomAmount} of {reward.ItemSubtypeId}.");
                                 }
                                 else
                                 {
-                                    VoteRewards.Log.Warn($"Player {steamId}'s inventory is full. Could not grant reward.");
+                                    VoteRewardsMain.Log.Warn($"Player {steamId}'s inventory is full. Could not grant reward.");
                                 }
                             }
 
@@ -113,13 +113,13 @@ namespace VoteRewards
                         catch (Exception ex)
                         {
                             messages.Add("Failed to claim the reward. Please try again later.");
-                            VoteRewards.Log.Warn("Failed to claim the reward: " + ex.Message);
+                            VoteRewardsMain.Log.Warn("Failed to claim the reward: " + ex.Message);
                         }
                     }
                     else
                     {
                         messages.Add("No reward available at the moment. Please try again later.");
-                        VoteRewards.Log.Warn("No reward item found for player " + steamId);
+                        VoteRewardsMain.Log.Warn("No reward item found for player " + steamId);
                     }
                     break;
                 case 2:
@@ -127,7 +127,7 @@ namespace VoteRewards
                     break;
             }
 
-            VoteRewards.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
+            VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
         }
 
 
