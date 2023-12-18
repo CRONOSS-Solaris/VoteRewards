@@ -1,9 +1,12 @@
+using Nexus.API;
 using NLog;
 using Sandbox.Game.World;
+using Sandbox.ModAPI;
 using System;
-using System.Collections.Generic;  // Importujemy, aby móc używać list
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,8 +15,10 @@ using Torch.API;
 using Torch.API.Managers;
 using Torch.API.Plugins;
 using Torch.API.Session;
+using Torch.Managers;
 using Torch.Session;
 using VoteRewards.Config;
+using VoteRewards.Nexus;
 using VoteRewards.Utils;
 using VRageMath;
 
@@ -22,14 +27,48 @@ namespace VoteRewards
     public class VoteRewardsMain : TorchPluginBase, IWpfPlugin
     {
 
+        // Stałe i statyczne pola
         public static IChatManagerServer ChatManager => TorchBase.Instance.CurrentSession.Managers.GetManager<IChatManagerServer>();
         public static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private static readonly string CONFIG_FILE_NAME = "VoteRewardsConfig.cfg";
         private static readonly string REWARD_ITEMS_CONFIG_FILE_NAME = "RewardItemsConfig.cfg";
+        public bool IsReloadable => true;
+        public static VoteRewardsMain? Instance;
+
+        //Nexus
+        public static NexusAPI? nexusAPI { get; private set; }
+        private static readonly Guid NexusGUID = new("28a12184-0422-43ba-a6e6-2e228611cca5");
+        public static bool NexusInstalled { get; private set; } = false;
+        public static bool NexusInited;
+
+        // Pola prywatne i ich publiczne właściwości
+        private VoteRewardsControl _control;
+        private Persistent<VoteRewardsConfig> _config;
+        private Persistent<RewardItemsConfig> _rewardItemsConfig;
+        private Persistent<TimeSpentRewardsConfig> _timeSpentRewardsConfig;
+        private ReferralCodeManager _referralCodeManager;
+        private EventCodeManager _eventCodeManager;
+        private Persistent<RefferalCodeReward> _refferalCodeReward;
+        private Persistent<EventCodeReward> _eventCodeReward;
+        private IMultiplayerManagerBase _multiplayerManager;
+        private Dictionary<ulong, TimeSpan> _playerTimeSpent = new Dictionary<ulong, TimeSpan>();
+        private Timer _updatePlayerTimeSpentTimer;
+
+        public VoteRewardsConfig Config => _config?.Data;
+        public RewardItemsConfig RewardItemsConfig => _rewardItemsConfig?.Data;
+        public TimeSpentRewardsConfig TimeSpentRewardsConfig => _timeSpentRewardsConfig?.Data;
+        public ReferralCodeManager ReferralCodeManager => _referralCodeManager;
+        public EventCodeManager EventCodeManager => _eventCodeManager;
+        public RefferalCodeReward RefferalCodeReward => _refferalCodeReward?.Data;
+        public EventCodeReward EventCodeReward => _eventCodeReward?.Data;
+
+        // Nowe listy do przechowywania dostępnych typów i podtypów przedmiotów
+        public List<string> AvailableItemTypes { get; private set; } = new List<string>();
+        public Dictionary<string, List<string>> AvailableItemSubtypes { get; private set; } = new Dictionary<string, List<string>>();
+
         public VoteApiHelper ApiHelper { get; private set; }
 
-
-        private VoteRewardsControl _control;
+        // Metody i ich implementacje
         public UserControl GetControl()
         {
             if (_control == null)
@@ -39,36 +78,10 @@ namespace VoteRewards
             return _control;
         }
 
-        private Persistent<VoteRewardsConfig> _config;
-        public VoteRewardsConfig Config => _config?.Data;
-
-        private Persistent<RewardItemsConfig> _rewardItemsConfig;
-        public RewardItemsConfig RewardItemsConfig => _rewardItemsConfig?.Data;
-
-        private Persistent<TimeSpentRewardsConfig> _timeSpentRewardsConfig;
-        public TimeSpentRewardsConfig TimeSpentRewardsConfig => _timeSpentRewardsConfig?.Data;
-        private ReferralCodeManager _referralCodeManager;
-        public ReferralCodeManager ReferralCodeManager => _referralCodeManager;
-        private EventCodeManager _eventCodeManager;
-        public EventCodeManager EventCodeManager => _eventCodeManager;
-        private Persistent<RefferalCodeReward> _refferalCodeReward;
-        public RefferalCodeReward RefferalCodeReward => _refferalCodeReward?.Data;
-        private Persistent<EventCodeReward> _eventCodeReward;
-        public EventCodeReward EventCodeReward => _eventCodeReward?.Data;
-
-        // Nowe listy do przechowywania dostępnych typów i podtypów przedmiotów
-        public List<string> AvailableItemTypes { get; private set; } = new List<string>();
-        public Dictionary<string, List<string>> AvailableItemSubtypes { get; private set; } = new Dictionary<string, List<string>>();
-
-        private IMultiplayerManagerBase _multiplayerManager;
-
-        private Dictionary<ulong, TimeSpan> _playerTimeSpent = new Dictionary<ulong, TimeSpan>();
-        private Timer _updatePlayerTimeSpentTimer;
-
-
         public override void Init(ITorchBase torch)
         {
             base.Init(torch);
+            Instance = this;
             _config = SetupConfig(CONFIG_FILE_NAME, new VoteRewardsConfig());
             _rewardItemsConfig = SetupConfig(REWARD_ITEMS_CONFIG_FILE_NAME, new RewardItemsConfig());
             _timeSpentRewardsConfig = SetupConfig("TimeSpentRewardsConfig.cfg", new TimeSpentRewardsConfig());
@@ -126,9 +139,10 @@ namespace VoteRewards
             {
                 case TorchSessionState.Loaded:
                     Log.Info("Session Loaded!");
+                    ConnectNexus();
 
                     _updatePlayerTimeSpentTimer = new Timer(UpdatePlayerTimeSpent, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
-                    // Tutaj możesz zainicjować referencję do menedżera multiplayer
+
                     _multiplayerManager = Torch.Managers.GetManager<IMultiplayerManagerBase>();
                     if (_multiplayerManager == null)
                     {
@@ -236,6 +250,81 @@ namespace VoteRewards
             return config;
         }
 
+        private void ConnectNexus()
+        {
+            if (!NexusInited)
+            {
+                PluginManager? _pluginManager = Torch.Managers.GetManager<PluginManager>();
+                if (_pluginManager is null)
+                    return;
+
+                if (_pluginManager.Plugins.TryGetValue(NexusGUID, out ITorchPlugin? torchPlugin))
+                {
+                    if (torchPlugin is null)
+                        return;
+
+                    Type? Plugin = torchPlugin.GetType();
+                    Type? NexusPatcher = Plugin != null! ? Plugin.Assembly.GetType("Nexus.API.PluginAPISync") : null;
+                    if (NexusPatcher != null)
+                    {
+                        NexusPatcher.GetMethod("ApplyPatching", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, new object[]
+                        {
+                            typeof(NexusAPI), "VoteRewards Plugin"
+                        });
+                        nexusAPI = new NexusAPI(9452);
+                        MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(9452, new Action<ushort, byte[], ulong, bool>(NexusManager.HandleNexusMessage));
+                        NexusInstalled = true;
+                    }
+                }
+                NexusInited = true;
+                NexusAPI.Server thisServer = NexusAPI.GetThisServer();
+                NexusManager.SetServerData(thisServer);
+
+                if (Config!.isLobby)
+                {
+                    // Announce to all other servers that started before the Lobby, that this is the lobby server
+                    List<NexusAPI.Server> servers = NexusAPI.GetAllServers();
+                    foreach (NexusAPI.Server server in servers)
+                    {
+                        if (server.ServerID != thisServer.ServerID)
+                        {
+                            NexusMessage message = new(thisServer.ServerID, server.ServerID, false, thisServer, false, true);
+                            byte[] data = MyAPIGateway.Utilities.SerializeToBinary(message);
+                            nexusAPI?.SendMessageToServer(server.ServerID, data);
+                        }
+                    }
+                }
+            }
+        }
+
+        public void UpdateConfig(VoteRewardsConfig newConfig, bool propagateToServers = true)
+        {
+            if (_config?.Data == null)
+            {
+                Log.Warn("Config is not initialized.");
+                return;
+            }
+
+            // aktualizacja wartości konfiguracji...
+            _config.Data.DebugMode = newConfig.DebugMode;
+            _config.Data.ServerApiKey = newConfig.ServerApiKey;
+            _config.Data.VotingLink = newConfig.VotingLink;
+            _config.Data.NotificationPrefix = newConfig.NotificationPrefix;
+            _config.Data.IsReferralCodeEnabled = newConfig.IsReferralCodeEnabled;
+            _config.Data.MaxReferralCodes = newConfig.MaxReferralCodes;
+            _config.Data.CommandCooldownMinutes = newConfig.CommandCooldownMinutes;
+            _config.Data.ReferralCodePrefix = newConfig.ReferralCodePrefix;
+            _config.Data.IsEventCodeEnabled = newConfig.IsEventCodeEnabled;
+            _config.Data.EventCodePrefix = newConfig.EventCodePrefix;
+
+            _config.Save();
+
+            // Propaguj konfigurację do innych serwerów tylko jeśli jest to wymagane
+            if (propagateToServers)
+            {
+                NexusManager.SendConfigToAllServers(newConfig);
+            }
+        }
 
         public void Save()
         {
