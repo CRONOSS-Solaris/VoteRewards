@@ -326,6 +326,25 @@ namespace VoteRewards
             }
         }
 
+        public void UpdateTimeSpentRewardsConfig(TimeSpentRewardsConfig newConfig)
+        {
+            // Sprawdzanie, czy _timeSpentRewardsConfig nie jest nullem i czy jego Data jest dostępna
+            if (_timeSpentRewardsConfig?.Data == null)
+            {
+                Log.Warn("TimeSpentRewardsConfig is not initialized.");
+                return;
+            }
+
+            // Aktualizacja wartości konfiguracji
+            _timeSpentRewardsConfig.Data.RewardInterval = newConfig.RewardInterval;
+            _timeSpentRewardsConfig.Data.RewardsList = newConfig.RewardsList;
+            _timeSpentRewardsConfig.Data.NotificationPrefixx = newConfig.NotificationPrefixx;
+
+
+            _timeSpentRewardsConfig.Save();
+        }
+
+
         public void Save()
         {
             try

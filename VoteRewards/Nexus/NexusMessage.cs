@@ -14,6 +14,7 @@ namespace VoteRewards.Nexus
         public enum MessageType
         {
             BaseConfig,
+            TimeSpentRewardsConfig,
             // ...
         }
 
@@ -50,6 +51,10 @@ namespace VoteRewards.Nexus
                 ConfigData = data;
                 //PlayerOffers = new byte[0];
 
+            }
+            else if (messageType == MessageType.TimeSpentRewardsConfig)
+            {
+                ConfigData = data;
             }
 
 

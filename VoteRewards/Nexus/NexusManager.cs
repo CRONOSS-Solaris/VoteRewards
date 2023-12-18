@@ -43,6 +43,9 @@ namespace VoteRewards.Nexus
                     case NexusMessage.MessageType.BaseConfig:
                         HandleConfigurationMessage(message);
                         break;
+                    case NexusMessage.MessageType.TimeSpentRewardsConfig:
+                        HandleTimeSpentRewardsConfigMessage(message); 
+                        break;
 
                     default:
                         Log.Warn($"Received an unknown type of Nexus message. Type: {message.Type}");
