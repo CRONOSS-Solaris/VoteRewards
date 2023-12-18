@@ -344,6 +344,22 @@ namespace VoteRewards
             _timeSpentRewardsConfig.Save();
         }
 
+        public void UpdateRewardItemsConfig(RewardItemsConfig newConfig)
+        {
+            // Sprawdzanie, czy _timeSpentRewardsConfig nie jest nullem i czy jego Data jest dostępna
+            if (_timeSpentRewardsConfig?.Data == null)
+            {
+                Log.Warn("RewardItemsConfig is not initialized.");
+                return;
+            }
+
+            // Aktualizacja wartości konfiguracji
+            _rewardItemsConfig.Data.RewardItems = newConfig.RewardItems;
+
+
+            _rewardItemsConfig.Save();
+        }
+
 
         public void Save()
         {

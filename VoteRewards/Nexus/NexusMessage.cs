@@ -15,6 +15,7 @@ namespace VoteRewards.Nexus
         {
             BaseConfig,
             TimeSpentRewardsConfig,
+            RewardItemsConfig,
             // ...
         }
 
@@ -53,6 +54,10 @@ namespace VoteRewards.Nexus
 
             }
             else if (messageType == MessageType.TimeSpentRewardsConfig)
+            {
+                ConfigData = data;
+            }
+            else if (messageType == MessageType.RewardItemsConfig)
             {
                 ConfigData = data;
             }
