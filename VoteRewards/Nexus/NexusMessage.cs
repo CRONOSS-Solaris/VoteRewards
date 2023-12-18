@@ -16,6 +16,7 @@ namespace VoteRewards.Nexus
             BaseConfig,
             TimeSpentRewardsConfig,
             RewardItemsConfig,
+            RefferalCodeReward,
             // ...
         }
 
@@ -58,6 +59,10 @@ namespace VoteRewards.Nexus
                 ConfigData = data;
             }
             else if (messageType == MessageType.RewardItemsConfig)
+            {
+                ConfigData = data;
+            }
+            else if (messageType == MessageType.RefferalCodeReward)
             {
                 ConfigData = data;
             }

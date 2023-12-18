@@ -328,7 +328,6 @@ namespace VoteRewards
 
         public void UpdateTimeSpentRewardsConfig(TimeSpentRewardsConfig newConfig)
         {
-            // Sprawdzanie, czy _timeSpentRewardsConfig nie jest nullem i czy jego Data jest dostępna
             if (_timeSpentRewardsConfig?.Data == null)
             {
                 Log.Warn("TimeSpentRewardsConfig is not initialized.");
@@ -346,7 +345,6 @@ namespace VoteRewards
 
         public void UpdateRewardItemsConfig(RewardItemsConfig newConfig)
         {
-            // Sprawdzanie, czy _timeSpentRewardsConfig nie jest nullem i czy jego Data jest dostępna
             if (_timeSpentRewardsConfig?.Data == null)
             {
                 Log.Warn("RewardItemsConfig is not initialized.");
@@ -358,6 +356,21 @@ namespace VoteRewards
 
 
             _rewardItemsConfig.Save();
+        }
+
+        public void UpdateRefferalCodeReward(RefferalCodeReward newConfig)
+        {
+            if (_refferalCodeReward?.Data == null)
+            {
+                Log.Warn("RewardItemsConfig is not initialized.");
+                return;
+            }
+
+            // Aktualizacja wartości konfiguracji
+            _refferalCodeReward.Data.RewardItems = newConfig.RewardItems;
+
+
+            _refferalCodeReward.Save();
         }
 
 
