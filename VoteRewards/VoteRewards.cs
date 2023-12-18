@@ -373,6 +373,20 @@ namespace VoteRewards
             _refferalCodeReward.Save();
         }
 
+        public void UpdateEventCodeReward(EventCodeReward newConfig)
+        {
+            if (_eventCodeReward?.Data == null)
+            {
+                Log.Warn("EventCodeReward is not initialized.");
+                return;
+            }
+
+            // Aktualizacja wartości konfiguracji
+            _eventCodeReward.Data.RewardItems = newConfig.RewardItems;
+
+
+            _eventCodeReward.Save();
+        }
 
         public void Save()
         {
