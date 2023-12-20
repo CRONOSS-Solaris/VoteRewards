@@ -1,5 +1,6 @@
 ﻿using Nexus.API;
 using ProtoBuf;
+#nullable enable
 
 namespace VoteRewards.Nexus
 {
@@ -22,13 +23,13 @@ namespace VoteRewards.Nexus
         }
 
         [ProtoMember(1)]
-        public byte[] ConfigData { get; set; }
+        public byte[]? ConfigData { get; set; }
 
         [ProtoMember(2)]
         public MessageType Type { get; set; }
 
         [ProtoMember(3)]
-        public byte[] Data { get; set; }
+        public byte[]? Data { get; set; }
 
         public readonly int fromServerID;
         public readonly int toServerID;

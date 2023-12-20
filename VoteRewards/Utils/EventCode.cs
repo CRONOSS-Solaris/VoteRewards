@@ -1,5 +1,6 @@
 ﻿using ProtoBuf;
 using System.Collections.Generic;
+#nullable enable 
 
 namespace VoteRewards.Utils
 {

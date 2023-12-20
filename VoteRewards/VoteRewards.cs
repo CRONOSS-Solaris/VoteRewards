@@ -21,6 +21,7 @@ using VoteRewards.Config;
 using VoteRewards.Nexus;
 using VoteRewards.Utils;
 using VRageMath;
+#nullable enable 
 
 namespace VoteRewards
 {
