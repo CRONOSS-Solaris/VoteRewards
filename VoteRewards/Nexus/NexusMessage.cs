@@ -1,10 +1,5 @@
 ﻿using Nexus.API;
 using ProtoBuf;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace VoteRewards.Nexus
 {
@@ -17,7 +12,12 @@ namespace VoteRewards.Nexus
             TimeSpentRewardsConfig,
             RewardItemsConfig,
             RefferalCodeReward,
+            RefferalCodeCreate,
+            RedeemReferralCode,
+            AwardReferralCode,
             EventCodeReward,
+            EventCodeCreate,
+            RedeemEventCode,
             // ...
         }
 
@@ -26,6 +26,9 @@ namespace VoteRewards.Nexus
 
         [ProtoMember(2)]
         public MessageType Type { get; set; }
+
+        [ProtoMember(3)]
+        public byte[] Data { get; set; }
 
         public readonly int fromServerID;
         public readonly int toServerID;
@@ -52,26 +55,55 @@ namespace VoteRewards.Nexus
             if (messageType == MessageType.BaseConfig)
             {
                 ConfigData = data;
+                Data = new byte[0];
                 //PlayerOffers = new byte[0];
 
             }
             else if (messageType == MessageType.TimeSpentRewardsConfig)
             {
                 ConfigData = data;
+                Data = new byte[0];
             }
             else if (messageType == MessageType.RewardItemsConfig)
             {
                 ConfigData = data;
+                Data = new byte[0];
             }
             else if (messageType == MessageType.RefferalCodeReward)
             {
                 ConfigData = data;
+                Data = new byte[0];
             }
             else if (messageType == MessageType.EventCodeReward)
             {
                 ConfigData = data;
+                Data = new byte[0];
             }
-
+            else if (messageType == MessageType.RefferalCodeCreate)
+            {
+                Data = data;
+                ConfigData = new byte[0];
+            }
+            else if (messageType == MessageType.RedeemReferralCode)
+            {
+                Data = data;
+                ConfigData = new byte[0];
+            }
+            else if (messageType == MessageType.AwardReferralCode)
+            {
+                Data = data;
+                ConfigData = new byte[0];
+            }
+            else if (messageType == MessageType.EventCodeCreate)
+            {
+                Data = data;
+                ConfigData = new byte[0];
+            }
+            else if (messageType == MessageType.RedeemEventCode)
+            {
+                Data = data;
+                ConfigData = new byte[0];
+            }
 
             Type = messageType;
         }

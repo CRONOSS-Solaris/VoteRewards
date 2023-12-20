@@ -55,6 +55,21 @@ namespace VoteRewards.Nexus
                     case NexusMessage.MessageType.EventCodeReward:
                         HandleEventCodeRewardMessage(message);
                         break;
+                    case NexusMessage.MessageType.RefferalCodeCreate:
+                        HandleRefferalCodeCreateMessage(message);
+                        break;
+                    case NexusMessage.MessageType.RedeemReferralCode:
+                        HandleRedeemReferralCodeMessage(message);
+                        break;
+                    case NexusMessage.MessageType.AwardReferralCode:
+                        HandleAwardReferralCodeMessage(message);
+                        break;
+                    case NexusMessage.MessageType.EventCodeCreate:
+                        HandleEventCodeCreateMessage(message);
+                        break;
+                    case NexusMessage.MessageType.RedeemEventCode:
+                        HandleRedeemEventCodeMessage(message);
+                        break;
 
                     default:
                         Log.Warn($"Received an unknown type of Nexus message. Type: {message.Type}");

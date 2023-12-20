@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using NLog;
+using VoteRewards.Nexus;
 
 namespace VoteRewards.Utils
 {
@@ -142,6 +143,8 @@ namespace VoteRewards.Utils
             referralCode.RedeemedBySteamIds.Add(redeemerSteamId);
             referralCode.CodeUsageCount++;
 
+            NexusManager.SendRedeemReferralCodeToAllServers(code, redeemerSteamId, referralCode.RedeemedBySteamIds, referralCode.CodeUsageCount);
+
             // Usunięcie wykorzystanego kodu, ponieważ jest jednorazowy
             referralCode.Codes.Remove(code);
 
@@ -201,6 +204,30 @@ namespace VoteRewards.Utils
             return _referralCodes.FirstOrDefault(rc => rc.SteamId == steamId);
         }
 
+        public ReferralCode GetReferralCodeByCode(string code)
+        {
+            return _referralCodes.FirstOrDefault(rc => rc.Codes.Contains(code));
+        }
+
+        public void AddNewReferralCode(ReferralCode newReferralCode)
+        {
+            // Dodanie nowego wpisu
+            _referralCodes.Add(newReferralCode);
+            SaveReferralCodes();
+        }
+
+        public void UpdateExistingReferralCode(ReferralCode updatedReferralCode)
+        {
+            var existingReferralCode = _referralCodes.FirstOrDefault(rc => rc.SteamId == updatedReferralCode.SteamId);
+            if (existingReferralCode != null)
+            {
+                // Aktualizacja istniejącego kodu
+                existingReferralCode.Codes = updatedReferralCode.Codes;
+                existingReferralCode.RedeemedBySteamIds = updatedReferralCode.RedeemedBySteamIds;
+                existingReferralCode.CodeUsageCount = updatedReferralCode.CodeUsageCount;
+                SaveReferralCodes();
+            }
+        }
 
     }
 }

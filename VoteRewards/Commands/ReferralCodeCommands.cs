@@ -4,10 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using Torch.Commands;
 using Torch.Commands.Permissions;
+using VoteRewards.Nexus;
 using VoteRewards.Utils;
 using VRage.Game.ModAPI;
 using VRage.Plugins;
-using VRageMath; // Upewnij się, że masz dodaną tę przestrzeń nazw dla Color
+using VRageMath;
 
 namespace VoteRewards
 {
@@ -59,6 +60,9 @@ namespace VoteRewards
                     if (!string.IsNullOrEmpty(lastGeneratedCode))
                     {
                         generatedCodes.Add(lastGeneratedCode);
+
+                        // Wywołanie metody wysyłającej kody na inne serwery
+                        NexusManager.SendRefferalCodeCreateToAllServers(newReferralCode);
                     }
                 }
             }
@@ -67,6 +71,7 @@ namespace VoteRewards
             {
                 string codesMessage = string.Join(", ", generatedCodes);
                 VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", $"Your new referral codes are: {codesMessage}", Color.Green, Context.Player.SteamUserId);
+
             }
             else
             {
@@ -235,10 +240,12 @@ namespace VoteRewards
             // Aktualizacja licznika użycia kodu po przyznaniu nagród
             referralCode.CodeUsageCount -= awardsToClaim;
 
+            NexusManager.SendAwardReferralCodeToAllServers(steamId, awardsToClaim);
+
             ReferralCodeManager.SaveReferralCodes();
         }
 
-        [Command("testredeem", "Tests the referral code redemption for owners.")]
+        [Command("testredeem", "Tests the referral code redemption for owners.(Nexus OFF)")]
         [Permission(MyPromoteLevel.Owner)]
         public void TestRedeemReferralCodeCommand(string code)
         {
@@ -294,7 +301,6 @@ namespace VoteRewards
                 case ReferralCodeManager.RedeemCodeResult.CodeNotFound:
                     VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "No such code found or already used", Color.Red, Context.Player.SteamUserId);
                     break;
-                    // Obsługa innych przypadków, jeśli to potrzebne
             }
         }
     }
