@@ -265,7 +265,7 @@ namespace VoteRewards
                         return;
 
                     Type? Plugin = torchPlugin.GetType();
-                    Type? NexusPatcher = Plugin != null! ? Plugin.Assembly.GetType("Nexus.API.PluginAPISync") : null;
+                    Type? NexusPatcher = Plugin != null ? Plugin.Assembly.GetType("Nexus.API.PluginAPISync") : null;
                     if (NexusPatcher != null)
                     {
                         NexusPatcher.GetMethod("ApplyPatching", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, new object[]
@@ -278,6 +278,11 @@ namespace VoteRewards
                     }
                 }
                 NexusInited = true;
+            }
+
+            // Nowy dodany blok sprawdzający
+            if (NexusInstalled && nexusAPI != null)
+            {
                 NexusAPI.Server thisServer = NexusAPI.GetThisServer();
                 NexusManager.SetServerData(thisServer);
 
@@ -295,6 +300,10 @@ namespace VoteRewards
                         }
                     }
                 }
+            }
+            else
+            {
+                Log.Warn("Nexus API is not installed or not initialized. Skipping Nexus connection.");
             }
         }
 
