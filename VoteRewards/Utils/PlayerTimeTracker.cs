@@ -170,6 +170,15 @@ namespace VoteRewards
             }
         }
 
+        public TimeSpan GetTotalTimeSpent(ulong steamId)
+        {
+            if (_playerData.TryGetValue(steamId, out var playerInfo))
+            {
+                return playerInfo.TotalTimeSpent;
+            }
+            return TimeSpan.Zero;
+        }
+
         public void StopTimer()
         {
             if (_saveTimer != null)

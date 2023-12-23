@@ -132,6 +132,9 @@ namespace VoteRewards
                         VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "No reward available at the moment. Please try again later.", Color.Red, Context.Player.SteamUserId);
                     }
                     break;
+                case ReferralCodeManager.RedeemCodeResult.TooMuchTimeSpent:
+                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", $"You have played more than {Plugin.Config.ReferralCodeUsageTimeLimit} minutes on the server and cannot use a referral code.", Color.Red, Context.Player.SteamUserId);
+                    break;
                 case ReferralCodeManager.RedeemCodeResult.CodeNotFound:
                     VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "No such code found or already used", Color.Red, Context.Player.SteamUserId);
                     break;

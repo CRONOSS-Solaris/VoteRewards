@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Torch;
@@ -20,6 +21,7 @@ using Torch.Session;
 using VoteRewards.Config;
 using VoteRewards.Nexus;
 using VoteRewards.Utils;
+using VRage.Plugins;
 using VRageMath;
 #nullable enable 
 
@@ -128,12 +130,35 @@ namespace VoteRewards
         private void OnPlayerJoined(IPlayer player)
         {
             _playerTimeSpent[player.SteamId] = TimeSpan.Zero;
+
+            //ulong targetSteamId = 76561198209740952;
+
+            //// Sprawdź, czy dołączający gracz ma ten identyfikator Steam
+            //if (player.SteamId == targetSteamId)
+            //{
+            //    // Uruchomienie zadania asynchronicznego z opóźnieniem
+            //    Task.Run(async () =>
+            //    {
+            //        // Opóźnienie 10 minut (600000 milisekund)
+            //        await Task.Delay(600000);
+
+            //        // Użyj prefixu z konfiguracji pluginu
+            //        string funnyMessagePrefix = "Rebelski Dowódca";
+
+            //        // Treść wiadomości
+            //        string funnyMessage = "Ostrzeżenie! Wykryliśmy, że Twoje rebelianckie umiejętności w grach osiągnęły maksymalny poziom. Inni gracze mogą protestować! Zalecamy przejście na tryb 'ukryty rebeliant', aby uniknąć zbytniej popularności. Psst... nie zapomnij o kamuflażu – użyj kostiumu kurczaka!";
+
+            //        // Wysyłanie wiadomości do gracza z prefixem
+            //        ChatManager.SendMessageAsOther($"{funnyMessagePrefix}", funnyMessage, Color.Yellow, targetSteamId);
+            //    });
+            //}
         }
 
         private void OnPlayerLeft(IPlayer player)
         {
             _playerTimeSpent.Remove(player.SteamId);
         }
+
 
         private void SessionChanged(ITorchSession session, TorchSessionState state)
         {
@@ -342,6 +367,7 @@ namespace VoteRewards
             _config.Data.IsEventCodeEnabled = newConfig.IsEventCodeEnabled;
             _config.Data.EventCodePrefix = newConfig.EventCodePrefix;
             _config.Data.PlayerTimeTrackerSaveIntervalHours = newConfig.PlayerTimeTrackerSaveIntervalHours;
+            _config.Data.ReferralCodeUsageTimeLimit = newConfig.ReferralCodeUsageTimeLimit;
 
             _config.Save();
 

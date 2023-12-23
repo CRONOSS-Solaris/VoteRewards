@@ -121,7 +121,8 @@ namespace VoteRewards.Utils
             Success,
             CodeNotFound,
             CannotUseOwnCode,
-            AlreadyUsed
+            AlreadyUsed,
+            TooMuchTimeSpent
         }
 
 
@@ -131,6 +132,11 @@ namespace VoteRewards.Utils
             if (HasPlayerUsedAnyCode(redeemerSteamId))
             {
                 return RedeemCodeResult.AlreadyUsed;
+            }
+
+            if (VoteRewardsMain.Instance.PlayerTimeTracker.GetTotalTimeSpent(redeemerSteamId) >= TimeSpan.FromMinutes(_config.ReferralCodeUsageTimeLimit))
+            {
+                return RedeemCodeResult.TooMuchTimeSpent;
             }
 
             var referralCode = _referralCodes.FirstOrDefault(rc => rc.Codes.Contains(code));

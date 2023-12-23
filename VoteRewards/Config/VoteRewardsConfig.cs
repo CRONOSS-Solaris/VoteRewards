@@ -18,6 +18,7 @@ namespace VoteRewards
         private int _maxReferralCodes = 10;
         private int _commandCooldownMinutes = 60;
         private string _referralCodePrefix = "REFERRAL CODE";
+        private int _referralCodeUsageTimeLimit = 420;
 
         //Event Code
         private bool _isEventCodeEnabled = false;
@@ -86,17 +87,23 @@ namespace VoteRewards
             get => _referralCodePrefix;
             set => SetValue(ref _referralCodePrefix, value);
         }
+        [ProtoMember(9)]
+        public int ReferralCodeUsageTimeLimit
+        {
+            get => _referralCodeUsageTimeLimit;
+            set => SetValue(ref _referralCodeUsageTimeLimit, value);
+        }
 
         //Event Code
 
-        [ProtoMember(9)]
+        [ProtoMember(10)]
         public bool IsEventCodeEnabled
         {
             get => _isEventCodeEnabled;
             set => SetValue(ref _isEventCodeEnabled, value);
         }
 
-        [ProtoMember(10)]
+        [ProtoMember(11)]
         public string EventCodePrefix
         {
             get => _eventCodePrefix;
@@ -105,7 +112,7 @@ namespace VoteRewards
 
         //PlayerTimeTracker
 
-        [ProtoMember(11)]
+        [ProtoMember(12)]
         public int PlayerTimeTrackerSaveIntervalHours
         {
             get => _playerTimeTrackerSaveIntervalHours;
