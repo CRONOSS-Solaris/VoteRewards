@@ -130,6 +130,28 @@ namespace VoteRewards
             VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
         }
 
+        [Command("topplaytime", "Shows top 5 players with the most time spent on the server.")]
+        [Permission(MyPromoteLevel.None)]
+        public void ShowTopPlayersCommand()
+        {
+            var topPlayers = Plugin.PlayerTimeTracker.GetTopPlayers(5);
+            if (topPlayers.Count == 0)
+            {
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", "No player data available.", Color.Red, Context.Player.SteamUserId);
+                return;
+            }
+
+            string response = "Top 5 players by time spent on the server:\n";
+            int rank = 1;
+            foreach (var player in topPlayers)
+            {
+                var totalMinutes = (int)player.TotalTimeSpent.TotalMinutes;
+                response += $"{rank}. {player.NickName}: {totalMinutes} minutes\n";
+                rank++;
+            }
+
+            VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", response, Color.Green, Context.Player.SteamUserId);
+        }
 
     }
 }

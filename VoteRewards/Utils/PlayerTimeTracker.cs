@@ -179,6 +179,15 @@ namespace VoteRewards
             return TimeSpan.Zero;
         }
 
+        public List<(string NickName, TimeSpan TotalTimeSpent)> GetTopPlayers(int count)
+        {
+            return _playerData.Values
+                .OrderByDescending(p => p.TotalTimeSpent)
+                .Take(count)
+                .Select(p => (p.NickName, p.TotalTimeSpent))
+                .ToList();
+        }
+
         public void StopTimer()
         {
             if (_saveTimer != null)
