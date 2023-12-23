@@ -23,6 +23,9 @@ namespace VoteRewards
         private bool _isEventCodeEnabled = false;
         private string _eventCodePrefix = "EVENT CODE";
 
+        //PlayerTimeTracker
+        private int _playerTimeTrackerSaveIntervalHours = 1;
+
         //Nexus
         private bool _isLobby;
         public bool isLobby { get => _isLobby; set => SetValue(ref _isLobby, value); }
@@ -98,6 +101,15 @@ namespace VoteRewards
         {
             get => _eventCodePrefix;
             set => SetValue(ref _eventCodePrefix, value);
+        }
+
+        //PlayerTimeTracker
+
+        [ProtoMember(11)]
+        public int PlayerTimeTrackerSaveIntervalHours
+        {
+            get => _playerTimeTrackerSaveIntervalHours;
+            set => SetValue(ref _playerTimeTrackerSaveIntervalHours, value);
         }
     }
 

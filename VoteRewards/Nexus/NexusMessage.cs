@@ -1,5 +1,6 @@
 ﻿using Nexus.API;
 using ProtoBuf;
+using System.Collections;
 #nullable enable
 
 namespace VoteRewards.Nexus
@@ -19,6 +20,7 @@ namespace VoteRewards.Nexus
             EventCodeReward,
             EventCodeCreate,
             RedeemEventCode,
+            PlayerTimeTracker,
             // ...
         }
 
@@ -101,6 +103,11 @@ namespace VoteRewards.Nexus
                 ConfigData = new byte[0];
             }
             else if (messageType == MessageType.RedeemEventCode)
+            {
+                Data = data;
+                ConfigData = new byte[0];
+            }
+            else if (messageType == MessageType.PlayerTimeTracker)
             {
                 Data = data;
                 ConfigData = new byte[0];

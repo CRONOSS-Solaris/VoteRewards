@@ -217,6 +217,7 @@
     <Compile Include="VoteRewards\Nexus\NexusManager.cs" />
     <Compile Include="VoteRewards\Nexus\NexusManager.EventCode.cs" />
     <Compile Include="VoteRewards\Nexus\NexusManager.EventCodeReward.cs" />
+    <Compile Include="VoteRewards\Nexus\NexusManager.PlayerTimeTracker.cs" />
     <Compile Include="VoteRewards\Nexus\NexusManager.RefferalCode.cs" />
     <Compile Include="VoteRewards\Nexus\NexusManager.RefferalCodeReward.cs" />
     <Compile Include="VoteRewards\Nexus\NexusManager.RewardItemsConfig.cs" />
@@ -228,6 +229,7 @@
     <Compile Include="VoteRewards\Utils\ItemLoader.cs" />
     <Compile Include="VoteRewards\Utils\LoggerHelper.cs" />
     <Compile Include="VoteRewards\Utils\PlayerRewardManager.cs" />
+    <Compile Include="VoteRewards\Utils\PlayerTimeTracker.cs" />
     <Compile Include="VoteRewards\Utils\ReferralCode.cs" />
     <Compile Include="VoteRewards\Utils\ReferralCodeManager.cs" />
     <Compile Include="VoteRewards\Utils\RewardItem.cs" />

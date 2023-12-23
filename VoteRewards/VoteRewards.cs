@@ -54,6 +54,7 @@ namespace VoteRewards
         private IMultiplayerManagerBase _multiplayerManager;
         private Dictionary<ulong, TimeSpan> _playerTimeSpent = new Dictionary<ulong, TimeSpan>();
         private Timer _updatePlayerTimeSpentTimer;
+        public PlayerTimeTracker PlayerTimeTracker { get; private set; }
 
         public VoteRewardsConfig Config => _config?.Data;
         public RewardItemsConfig RewardItemsConfig => _rewardItemsConfig?.Data;
@@ -143,8 +144,9 @@ namespace VoteRewards
                     ConnectNexus();
 
                     _updatePlayerTimeSpentTimer = new Timer(UpdatePlayerTimeSpent, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
-
-                    _multiplayerManager = Torch.Managers.GetManager<IMultiplayerManagerBase>();
+                    PlayerTimeTracker = new PlayerTimeTracker(_config.Data);
+                    
+                    _multiplayerManager = session.Managers.GetManager<IMultiplayerManagerBase>();
                     if (_multiplayerManager == null)
                     {
                         Log.Warn("Could not get multiplayer manager.");
@@ -154,6 +156,8 @@ namespace VoteRewards
                         LoggerHelper.DebugLog(Log, _config.Data, "Multiplayer manager initialized.");
                         _multiplayerManager.PlayerJoined += OnPlayerJoined;
                         _multiplayerManager.PlayerLeft += OnPlayerLeft;
+                        _multiplayerManager.PlayerJoined += PlayerTimeTracker.OnPlayerJoined;
+                        _multiplayerManager.PlayerLeft += PlayerTimeTracker.OnPlayerLeft;
                     }
 
                     ItemLoader.LoadAvailableItemTypesAndSubtypes(AvailableItemTypes, AvailableItemSubtypes, Log, Config);
@@ -162,6 +166,17 @@ namespace VoteRewards
 
                 case TorchSessionState.Unloading:
                     Log.Info("Session Unloading!");
+
+                    if (PlayerTimeTracker != null)
+                    {
+
+                        // Zapisz wszystkie czasy graczy
+                        PlayerTimeTracker.SaveAllPlayerTimes();
+
+                        // Zatrzymaj timer
+                        PlayerTimeTracker.StopTimer();
+                    }
+
 
                     // Ustawienie menedżera na null podczas rozładowywania sesji
                     _multiplayerManager = null;
@@ -326,6 +341,7 @@ namespace VoteRewards
             _config.Data.ReferralCodePrefix = newConfig.ReferralCodePrefix;
             _config.Data.IsEventCodeEnabled = newConfig.IsEventCodeEnabled;
             _config.Data.EventCodePrefix = newConfig.EventCodePrefix;
+            _config.Data.PlayerTimeTrackerSaveIntervalHours = newConfig.PlayerTimeTrackerSaveIntervalHours;
 
             _config.Save();
 
