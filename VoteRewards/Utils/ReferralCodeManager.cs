@@ -128,6 +128,11 @@ namespace VoteRewards.Utils
         public RedeemCodeResult RedeemReferralCode(string code, ulong redeemerSteamId)
         {
             // Sprawdzanie, czy gracz już wykorzystał jakiś kod
+            if (HasPlayerUsedAnyCode(redeemerSteamId))
+            {
+                return RedeemCodeResult.AlreadyUsed;
+            }
+
             var referralCode = _referralCodes.FirstOrDefault(rc => rc.Codes.Contains(code));
             if (referralCode == null)
             {
@@ -152,7 +157,10 @@ namespace VoteRewards.Utils
             return RedeemCodeResult.Success;
         }
 
-
+        public bool HasPlayerUsedAnyCode(ulong steamId)
+        {
+            return _referralCodes.Any(rc => rc.RedeemedBySteamIds.Contains(steamId));
+        }
 
         public ReferralCodeManager.RedeemCodeResult TestRedeemReferralCode(string code, ulong redeemerSteamId)
         {
