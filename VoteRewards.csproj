@@ -253,6 +253,7 @@
     <Compile Include="VoteRewards\Commands\VoteRewardsCommands.cs" />
     <Compile Include="VoteRewards\Config\VoteRewardsConfig.cs" />
     <Compile Include="VoteRewards\VoteRewards.cs" />
+    <Compile Include="VoteRewards\VoteRewards.updateconfig.cs" />
     <EmbeddedResource Include="VoteRewards\Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
