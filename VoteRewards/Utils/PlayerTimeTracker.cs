@@ -32,10 +32,6 @@ namespace VoteRewards
 
             InitializeDirectory();
             LoadPlayerTimes();
-
-            _saveTimer = new Timer(TimeSpan.FromHours(config.PlayerTimeTrackerSaveIntervalHours).TotalMilliseconds);
-            _saveTimer.Elapsed += (sender, e) => SaveAllPlayerTimes();
-            _saveTimer.Start();
         }
 
         private void InitializeDirectory()
@@ -186,16 +182,6 @@ namespace VoteRewards
                 .Take(count)
                 .Select(p => (p.NickName, p.TotalTimeSpent))
                 .ToList();
-        }
-
-        public void StopTimer()
-        {
-            if (_saveTimer != null)
-            {
-                _saveTimer.Stop();
-                _saveTimer.Dispose();
-                _saveTimer = null;
-            }
         }
     }
 }

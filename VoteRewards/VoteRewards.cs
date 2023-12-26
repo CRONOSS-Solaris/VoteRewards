@@ -192,16 +192,6 @@ namespace VoteRewards
                 case TorchSessionState.Unloading:
                     Log.Info("Session Unloading!");
 
-                    if (PlayerTimeTracker != null)
-                    {
-
-                        // Zapisz wszystkie czasy graczy
-                        PlayerTimeTracker.SaveAllPlayerTimes();
-
-                        // Zatrzymaj timer
-                        PlayerTimeTracker.StopTimer();
-                    }
-
 
                     // Ustawienie menedżera na null podczas rozładowywania sesji
                     _multiplayerManager = null;
