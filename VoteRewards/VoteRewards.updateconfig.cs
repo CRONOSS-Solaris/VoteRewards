@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Torch;
 using Torch.API.Plugins;
-using Torch;
 using VoteRewards.Config;
 using VoteRewards.Nexus;
 
@@ -31,7 +26,6 @@ namespace VoteRewards
             _config.Data.ReferralCodePrefix = newConfig.ReferralCodePrefix;
             _config.Data.IsEventCodeEnabled = newConfig.IsEventCodeEnabled;
             _config.Data.EventCodePrefix = newConfig.EventCodePrefix;
-            _config.Data.PlayerTimeTrackerSaveIntervalHours = newConfig.PlayerTimeTrackerSaveIntervalHours;
             _config.Data.ReferralCodeUsageTimeLimit = newConfig.ReferralCodeUsageTimeLimit;
 
             _config.Save();

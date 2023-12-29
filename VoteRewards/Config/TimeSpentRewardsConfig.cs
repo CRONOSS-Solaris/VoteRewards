@@ -1,8 +1,6 @@
 ﻿using ProtoBuf;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Torch;
-using VoteRewards.Nexus;
 using VoteRewards.Utils;
 
 namespace VoteRewards.Config

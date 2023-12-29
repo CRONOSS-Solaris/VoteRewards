@@ -113,9 +113,6 @@
                     <TextBlock Grid.Column="0" Grid.Row ="3" VerticalAlignment="Center" Text="Notification Prefix" Margin="5"/>
                     <TextBox Style="{DynamicResource TextBoxStyle1}" Name="NotificationPrefixTextBox" Grid.Column="1" Grid.Row="3" Margin="5,5,5,5" Height="25" Text="{Binding NotificationPrefix}"/>
 
-                    <TextBlock Grid.Column="0" Grid.Row ="4" VerticalAlignment="Center" Text="Player Time Tracker Save (HOUR)" Margin="5"/>
-                    <TextBox Style="{DynamicResource TextBoxStyle1}" Name="PlayerTimeTrackerSaveIntervalHoursTextBox" Grid.Column="1" Grid.Row="4" Margin="5,5,5,5" Height="25" Text="{Binding PlayerTimeTrackerSaveIntervalHours}"/>
-
                     <CheckBox Grid.Row="0" Grid.Column="1" Content="Debug Mode" IsChecked="{Binding DebugMode}" Margin="5,5,5,5" Grid.ColumnSpan="2" FontWeight="Normal"/>
 
                     <Button Style="{StaticResource ButtonStyle1}" Grid.Column="2" Grid.Row="7" Content="Save Config" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Width="150" Height="25" Click="SaveButton_OnClick"></Button>

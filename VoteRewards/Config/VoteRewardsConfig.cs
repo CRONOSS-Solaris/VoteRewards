@@ -1,6 +1,5 @@
 ﻿using ProtoBuf;
 using Torch;
-using VRage.Game.ModAPI;
 
 namespace VoteRewards
 {
@@ -23,9 +22,6 @@ namespace VoteRewards
         //Event Code
         private bool _isEventCodeEnabled = false;
         private string _eventCodePrefix = "EVENT CODE";
-
-        //PlayerTimeTracker
-        private int _playerTimeTrackerSaveIntervalHours = 1;
 
         //Nexus
         private bool _isLobby;
@@ -108,15 +104,6 @@ namespace VoteRewards
         {
             get => _eventCodePrefix;
             set => SetValue(ref _eventCodePrefix, value);
-        }
-
-        //PlayerTimeTracker
-
-        [ProtoMember(12)]
-        public int PlayerTimeTrackerSaveIntervalHours
-        {
-            get => _playerTimeTrackerSaveIntervalHours;
-            set => SetValue(ref _playerTimeTrackerSaveIntervalHours, value);
         }
     }
 

@@ -3,7 +3,6 @@ using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
 using VoteRewards.Utils;
-using static VoteRewards.Utils.ReferralCodeManager;
 
 namespace VoteRewards.Nexus
 {

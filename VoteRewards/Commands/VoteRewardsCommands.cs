@@ -1,16 +1,9 @@
-using NLog;
-using NLog.Fluent;
 using Sandbox.Game;
-using Sandbox.Game.World;
-using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Torch;
-using Torch.API.Managers;
 using Torch.Commands;
 using Torch.Commands.Permissions;
-using Torch.Managers;
 using VoteRewards.Utils;
 using VRage.Game.ModAPI;
 using VRageMath;

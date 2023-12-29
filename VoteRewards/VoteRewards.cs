@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Torch;
@@ -21,7 +20,6 @@ using Torch.Session;
 using VoteRewards.Config;
 using VoteRewards.Nexus;
 using VoteRewards.Utils;
-using VRage.Plugins;
 using VRageMath;
 #nullable enable 
 

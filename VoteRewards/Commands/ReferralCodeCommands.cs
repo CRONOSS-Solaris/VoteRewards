@@ -7,7 +7,6 @@ using Torch.Commands.Permissions;
 using VoteRewards.Nexus;
 using VoteRewards.Utils;
 using VRage.Game.ModAPI;
-using VRage.Plugins;
 using VRageMath;
 
 namespace VoteRewards

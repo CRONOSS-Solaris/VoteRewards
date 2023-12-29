@@ -1,6 +1,5 @@
 ﻿using Nexus.API;
 using ProtoBuf;
-using System.Collections;
 #nullable enable
 
 namespace VoteRewards.Nexus
