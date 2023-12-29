@@ -130,6 +130,31 @@ namespace VoteRewards
             VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
         }
 
+        [Command("subtracttime", "Subtracts time from a player's total playtime.")]
+        [Permission(MyPromoteLevel.Admin)]
+        public void SubtractTimeCommand(string playerIdentifier, int minutes)
+        {
+            ulong steamId;
+            if (!ulong.TryParse(playerIdentifier, out steamId))
+            {
+                // Jeśli nie jest to SteamID, spróbuj znaleźć gracza po NickName
+                var player = Plugin.PlayerTimeTracker.FindPlayerByNickName(playerIdentifier);
+                if (player.HasValue)
+                {
+                    steamId = player.Value.Item1;
+                }
+                else
+                {
+                    Context.Respond($"Player with NickName '{playerIdentifier}' not found.");
+                    return;
+                }
+            }
+
+            TimeSpan timeToSubtract = TimeSpan.FromMinutes(minutes);
+            Plugin.PlayerTimeTracker.SubtractPlayerTime(steamId, timeToSubtract);
+            Context.Respond($"Subtracted {minutes} minutes from player's (SteamID: {steamId}) playtime.");
+        }
+
         [Command("topplaytime", "Shows top 5 players with the most time spent on the server.")]
         [Permission(MyPromoteLevel.None)]
         public void ShowTopPlayersCommand()

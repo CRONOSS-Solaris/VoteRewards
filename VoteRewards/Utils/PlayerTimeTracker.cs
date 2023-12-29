@@ -17,7 +17,6 @@ namespace VoteRewards
         private readonly VoteRewardsConfig _config;
         private readonly Dictionary<ulong, (DateTime JoinTime, string NickName, TimeSpan TotalTimeSpent)> _playerData = new Dictionary<ulong, (DateTime, string, TimeSpan)>();
         private readonly string _dataFilePath;
-        private Timer _saveTimer;
 
         public PlayerTimeTracker(VoteRewardsConfig config)
         {
@@ -182,6 +181,38 @@ namespace VoteRewards
                 .Take(count)
                 .Select(p => (p.NickName, p.TotalTimeSpent))
                 .ToList();
+        }
+
+        public void SubtractPlayerTime(ulong steamId, TimeSpan timeToSubtract)
+        {
+            if (_playerData.TryGetValue(steamId, out var playerInfo))
+            {
+                var newTotalTime = playerInfo.TotalTimeSpent - timeToSubtract;
+                if (newTotalTime < TimeSpan.Zero)
+                {
+                    newTotalTime = TimeSpan.Zero;
+                }
+
+                _playerData[steamId] = (playerInfo.JoinTime, playerInfo.NickName, newTotalTime);
+                SavePlayerTime(steamId, playerInfo.NickName, newTotalTime);
+            }
+            else
+            {
+                Log.Warn($"Player with SteamID {steamId} not found in time tracker.");
+            }
+        }
+
+        // Metoda pomocnicza do wyszukiwania gracza po NickName
+        public (ulong, string)? FindPlayerByNickName(string nickName)
+        {
+            foreach (var kvp in _playerData)
+            {
+                if (kvp.Value.NickName.Equals(nickName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return (kvp.Key, kvp.Value.NickName);
+                }
+            }
+            return null;
         }
     }
 }
