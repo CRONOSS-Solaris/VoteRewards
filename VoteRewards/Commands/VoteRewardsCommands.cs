@@ -34,9 +34,9 @@ namespace VoteRewards
             VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Please vote for us at: {voteUrl}", Color.Green, Context.Player.SteamUserId);
         }
 
-        [Command("evote", "Directs the player to the voting page.")]
+        [Command("votelink", "Directs the player to the voting page.")]
         [Permission(MyPromoteLevel.None)]
-        public void EvoteCommand()
+        public void VotelinkCommand()
         {
             string voteUrl = Plugin.Config.VotingLink;
 
