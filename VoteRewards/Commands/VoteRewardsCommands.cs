@@ -34,6 +34,24 @@ namespace VoteRewards
             VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Please vote for us at: {voteUrl}", Color.Green, Context.Player.SteamUserId);
         }
 
+        [Command("evote", "Directs the player to the voting page.")]
+        [Permission(MyPromoteLevel.None)]
+        public void EvoteCommand()
+        {
+            string voteUrl = Plugin.Config.VotingLink;
+
+            // Pobranie Steam ID gracza, który wydał komendę
+            ulong steamId = Context.Player.SteamUserId;
+
+            // Przygotuj URL z linkfilter Steam do przekierowania na stronę do głosowania
+            string steamOverlayUrl = $"https://steamcommunity.com/linkfilter/?url={voteUrl}";
+
+            // Otwarcie Steam Overlay z URL do głosowania
+            MyVisualScriptLogicProvider.OpenSteamOverlay(steamOverlayUrl, Context.Player.Identity.IdentityId);
+
+            VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Please vote for us at: {voteUrl}", Color.Green, Context.Player.SteamUserId);
+        }
+
         [Command("reward", "Allows the player to claim their vote reward.")]
         [Permission(MyPromoteLevel.None)]
         public async void ClaimRewardCommand()
