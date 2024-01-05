@@ -118,7 +118,7 @@ namespace VoteRewards
             {
                 XDocument doc = File.Exists(_dataFilePath) ? XDocument.Load(_dataFilePath) : new XDocument(new XElement("Players"));
                 var existingPlayer = doc.Root.Elements("Player").FirstOrDefault(x => x.Attribute("SteamID").Value == steamId.ToString());
-                int totalMinutes = (int)totalTimeSpent.TotalMinutes; // Konwersja na liczbę całkowitą
+                long totalMinutes = (long)totalTimeSpent.TotalMinutes; // Konwersja na liczbę całkowitą
 
                 if (existingPlayer != null)
                 {
@@ -213,5 +213,6 @@ namespace VoteRewards
             }
             return null;
         }
+
     }
 }

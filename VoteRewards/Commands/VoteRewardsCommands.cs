@@ -181,7 +181,7 @@ namespace VoteRewards
             int rank = 1;
             foreach (var player in topPlayers)
             {
-                var totalMinutes = (int)player.TotalTimeSpent.TotalMinutes;
+                var totalMinutes = (long)player.TotalTimeSpent.TotalMinutes;
                 response += $"{rank}. {player.NickName}: {totalMinutes} minutes\n";
                 rank++;
             }
