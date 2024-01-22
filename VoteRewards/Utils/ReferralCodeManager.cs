@@ -134,10 +134,10 @@ namespace VoteRewards.Utils
                 return RedeemCodeResult.AlreadyUsed;
             }
 
-            if (VoteRewardsMain.Instance.PlayerTimeTracker.GetTotalTimeSpent(redeemerSteamId) >= TimeSpan.FromMinutes(_config.ReferralCodeUsageTimeLimit))
-            {
-                return RedeemCodeResult.TooMuchTimeSpent;
-            }
+            //if (VoteRewardsMain.Instance.PlayerTimeTracker.GetTotalTimeSpent(redeemerSteamId) >= TimeSpan.FromMinutes(_config.ReferralCodeUsageTimeLimit))
+            //{
+            //    return RedeemCodeResult.TooMuchTimeSpent;
+            //}
 
             var referralCode = _referralCodes.FirstOrDefault(rc => rc.Codes.Contains(code));
             if (referralCode == null)
