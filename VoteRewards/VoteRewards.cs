@@ -93,7 +93,7 @@ namespace VoteRewards
             _referralCodeManager = new ReferralCodeManager(referralCodeFilePath, _config.Data);
             string EventCodeFilePath = Path.Combine(StoragePath, "VoteReward", "EventCodes.json");
             _eventCodeManager = new EventCodeManager(EventCodeFilePath, _config.Data);
-            ApiHelper = new VoteApiHelper(Config.ServerApiKey);
+            ApiHelper = new VoteApiHelper();
 
 
             if (Application.Current != null)
