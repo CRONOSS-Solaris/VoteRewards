@@ -27,6 +27,13 @@ namespace VoteRewards
         private void SaveButton_OnClick(object sender, RoutedEventArgs e)
         {
             Plugin.Save();
+
+            var currentConfig = DataContext as VoteRewardsConfig;
+
+            if (currentConfig != null)
+            {
+                Plugin.UpdateConfig(currentConfig);
+            }
         }
 
         private void OpenItemConfigurationButton_Click(object sender, RoutedEventArgs e)

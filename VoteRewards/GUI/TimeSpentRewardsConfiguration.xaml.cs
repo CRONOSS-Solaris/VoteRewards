@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using VoteRewards.Nexus;
 using VoteRewards.Utils;
 
 namespace VoteRewards
@@ -67,6 +68,8 @@ namespace VoteRewards
                     return; // Przerywamy zapisywanie
                 }
             }
+
+            NexusManager.SendTimeSpentRewardsConfigUpdate(Plugin.TimeSpentRewardsConfig);
 
             Plugin.Save();
             this.Close();

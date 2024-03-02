@@ -1,16 +1,9 @@
-using NLog;
-using NLog.Fluent;
 using Sandbox.Game;
-using Sandbox.Game.World;
-using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Torch;
-using Torch.API.Managers;
 using Torch.Commands;
 using Torch.Commands.Permissions;
-using Torch.Managers;
 using VoteRewards.Utils;
 using VRage.Game.ModAPI;
 using VRageMath;
@@ -26,6 +19,24 @@ namespace VoteRewards
         [Command("vote", "Directs the player to the voting page.")]
         [Permission(MyPromoteLevel.None)]
         public void VoteCommand()
+        {
+            string voteUrl = Plugin.Config.VotingLink;
+
+            // Pobranie Steam ID gracza, który wydał komendę
+            ulong steamId = Context.Player.SteamUserId;
+
+            // Przygotuj URL z linkfilter Steam do przekierowania na stronę do głosowania
+            string steamOverlayUrl = $"https://steamcommunity.com/linkfilter/?url={voteUrl}";
+
+            // Otwarcie Steam Overlay z URL do głosowania
+            MyVisualScriptLogicProvider.OpenSteamOverlay(steamOverlayUrl, Context.Player.Identity.IdentityId);
+
+            VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Please vote for us at: {voteUrl}", Color.Green, Context.Player.SteamUserId);
+        }
+
+        [Command("votelink", "Directs the player to the voting page.")]
+        [Permission(MyPromoteLevel.None)]
+        public void VotelinkCommand()
         {
             string voteUrl = Plugin.Config.VotingLink;
 
@@ -130,6 +141,53 @@ namespace VoteRewards
             VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
         }
 
+        //[Command("subtracttime", "Subtracts time from a player's total playtime.")]
+        //[Permission(MyPromoteLevel.Admin)]
+        //public void SubtractTimeCommand(string playerIdentifier, int minutes)
+        //{
+        //    ulong steamId;
+        //    if (!ulong.TryParse(playerIdentifier, out steamId))
+        //    {
+        //        // Jeśli nie jest to SteamID, spróbuj znaleźć gracza po NickName
+        //        var player = Plugin.PlayerTimeTracker.FindPlayerByNickName(playerIdentifier);
+        //        if (player.HasValue)
+        //        {
+        //            steamId = player.Value.Item1;
+        //        }
+        //        else
+        //        {
+        //            Context.Respond($"Player with NickName '{playerIdentifier}' not found.");
+        //            return;
+        //        }
+        //    }
+
+        //    TimeSpan timeToSubtract = TimeSpan.FromMinutes(minutes);
+        //    Plugin.PlayerTimeTracker.SubtractPlayerTime(steamId, timeToSubtract);
+        //    Context.Respond($"Subtracted {minutes} minutes from player's (SteamID: {steamId}) playtime.");
+        //}
+
+        //[Command("topplaytime", "Shows top 5 players with the most time spent on the server.")]
+        //[Permission(MyPromoteLevel.None)]
+        //public void ShowTopPlayersCommand()
+        //{
+        //    var topPlayers = Plugin.PlayerTimeTracker.GetTopPlayers(5);
+        //    if (topPlayers.Count == 0)
+        //    {
+        //        VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", "No player data available.", Color.Red, Context.Player.SteamUserId);
+        //        return;
+        //    }
+
+        //    string response = "Top 5 players by time spent on the server:\n";
+        //    int rank = 1;
+        //    foreach (var player in topPlayers)
+        //    {
+        //        var totalMinutes = (long)player.TotalTimeSpent.TotalMinutes;
+        //        response += $"{rank}. {player.NickName}: {totalMinutes} minutes\n";
+        //        rank++;
+        //    }
+
+        //    VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", response, Color.Green, Context.Player.SteamUserId);
+        //}
 
     }
 }

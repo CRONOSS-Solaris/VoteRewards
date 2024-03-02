@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using VoteRewards.Nexus;
 using VoteRewards.Utils;
 
 namespace VoteRewards
@@ -65,6 +65,8 @@ namespace VoteRewards
                     return; // Przerywamy zapisywanie
                 }
             }
+
+            NexusManager.SendRewardItemsConfigUpdate(Plugin.RewardItemsConfig);
 
             // Kontynuacja zapisywania, jeśli wszystko jest w porządku
             Plugin.Save();

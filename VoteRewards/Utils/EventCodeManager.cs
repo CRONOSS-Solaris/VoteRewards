@@ -93,5 +93,15 @@ namespace VoteRewards.Utils
             return false; // Kod nie może być wykorzystany
         }
 
+        public void AddEventCode(EventCode newEventCode)
+        {
+            // Sprawdzenie, czy kod już istnieje
+            if (!_eventCodes.Any(ec => ec.Code == newEventCode.Code))
+            {
+                _eventCodes.Add(newEventCode);
+                SaveEventCodes();
+            }
+        }
+
     }
 }

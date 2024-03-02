@@ -9,16 +9,15 @@ namespace VoteRewards.Utils
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-        private readonly string _serverApiKey;
+        private string ServerApiKey => VoteRewardsMain.Instance.Config.ServerApiKey;
 
-        public VoteApiHelper(string serverApiKey)
+        public VoteApiHelper()
         {
-            _serverApiKey = serverApiKey;
         }
 
         public async Task<int> CheckVoteStatusAsync(string steamId)
         {
-            string apiUrl = $"https://space-engineers.com/api/?object=votes&element=claim&key={_serverApiKey}&steamid={steamId}";
+            string apiUrl = $"https://space-engineers.com/api/?object=votes&element=claim&key={ServerApiKey}&steamid={steamId}";
 
             using (HttpClient client = new HttpClient())
             {
@@ -55,7 +54,7 @@ namespace VoteRewards.Utils
 
         public async Task SetVoteAsClaimedAsync(ulong steamId)
         {
-            string apiUrl = $"https://space-engineers.com/api/?action=post&object=votes&element=claim&key={_serverApiKey}&steamid={steamId}";
+            string apiUrl = $"https://space-engineers.com/api/?action=post&object=votes&element=claim&key={ServerApiKey}&steamid={steamId}";
 
             using (HttpClient client = new HttpClient())
             {

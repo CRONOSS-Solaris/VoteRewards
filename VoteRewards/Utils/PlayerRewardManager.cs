@@ -1,12 +1,11 @@
 ﻿using NLog;
-using Sandbox.Game.World;
-using VRage.Game;
-using VRage.ObjectBuilders;
-using VoteRewards.Config;
 using Sandbox.Definitions;
+using Sandbox.Game.Entities;
+using Sandbox.Game.World;
 using Torch;
 using VRage;
-using Sandbox.Game.Entities;
+using VRage.Game;
+using VRage.ObjectBuilders;
 
 namespace VoteRewards.Utils
 {
