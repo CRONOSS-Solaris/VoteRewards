@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using Sandbox.Game;
 using System;
 using System.Collections.Generic;
@@ -140,6 +141,44 @@ namespace VoteRewards
 
             VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
         }
+
+        [Command("topvoters", "Shows top 10 voters of the month.")]
+        [Permission(MyPromoteLevel.None)]
+        public async void TopVotersCommand()
+        {
+            try
+            {
+                string responseContent = await Plugin.ApiHelper.GetTopVotersAsync();
+                if (responseContent.StartsWith("Error"))
+                {
+                    Context.Respond(responseContent);
+                    return;
+                }
+
+                // Deserializacja JSON do obiektu VoterResponse
+                var voterResponse = JsonConvert.DeserializeObject<VoterResponse>(responseContent);
+
+                // Sprawdzenie, czy lista voters jest pusta
+                if (voterResponse?.Voters == null || voterResponse.Voters.Count == 0)
+                {
+                    Context.Respond("No voters data available.");
+                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "No voters data available.", Color.Red, Context.Player.SteamUserId);
+                    return;
+                }
+
+                // Przygotowanie wiadomości z top 10 głosujących
+                string message = "Top 10 Voters:\n" + string.Join("\n", voterResponse.Voters.Select((voter, index) => $"{index + 1}. {voter.Nickname} - {voter.Votes} votes"));
+
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", message, Color.Green, Context.Player.SteamUserId);
+            }
+            catch (Exception ex)
+            {
+                VoteRewardsMain.Log.Warn("Failed to get top voters: " + ex.Message);
+                Context.Respond("Failed to retrieve top voters. Please try again later.");
+            }
+        }
+
+
 
         //[Command("subtracttime", "Subtracts time from a player's total playtime.")]
         //[Permission(MyPromoteLevel.Admin)]
