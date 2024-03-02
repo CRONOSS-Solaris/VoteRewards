@@ -124,6 +124,7 @@
 
                     <Button Style="{StaticResource ButtonStyle1}" Grid.Column="3" Grid.Row="1" x:Name="OpenItemConfigurationButton" Content="Open Item Configuration" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Width="150" Height="25" Click="OpenItemConfigurationButton_Click" IsEnabled="False"/>
                     <Button Style="{StaticResource ButtonStyle1}" Grid.Column="3" Grid.Row="2" x:Name="OpenTimeSpentRewardsConfigurationButton" Content="Open Time Spent Rewards" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Width="150" Height="25" Click="OpenTimeSpentRewardsConfigurationButton_Click" IsEnabled="False"/>
+                    <Button Style="{StaticResource ButtonStyle1}" Grid.Column="3" Grid.Row="3" x:Name="OpenTopVotersBenefitConfigurationButton" Content="Open Top Voters Benefit" HorizontalAlignment="Center" VerticalAlignment="Center" Width="150" Height="25" Click="OpenTopVotersBenefitButton_Click" IsEnabled="False"/>
                 </Grid>
             </TabItem>
 

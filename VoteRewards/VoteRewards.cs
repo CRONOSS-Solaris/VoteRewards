@@ -45,6 +45,7 @@ namespace VoteRewards
         // Pola prywatne i ich publiczne właściwości
         private VoteRewardsControl _control;
         private Persistent<VoteRewardsConfig> _config;
+        private Persistent<TopVotersBenefitConfig> _topVotersBenefitConfig;
         private Persistent<RewardItemsConfig> _rewardItemsConfig;
         private Persistent<TimeSpentRewardsConfig> _timeSpentRewardsConfig;
         private ReferralCodeManager _referralCodeManager;
@@ -58,6 +59,7 @@ namespace VoteRewards
 
         public VoteRewardsConfig Config => _config?.Data;
         public RewardItemsConfig RewardItemsConfig => _rewardItemsConfig?.Data;
+        public TopVotersBenefitConfig TopVotersBenefitConfig => _topVotersBenefitConfig?.Data;
         public TimeSpentRewardsConfig TimeSpentRewardsConfig => _timeSpentRewardsConfig?.Data;
         public ReferralCodeManager ReferralCodeManager => _referralCodeManager;
         public EventCodeManager EventCodeManager => _eventCodeManager;
@@ -86,6 +88,7 @@ namespace VoteRewards
             Instance = this;
             _config = SetupConfig(CONFIG_FILE_NAME, new VoteRewardsConfig());
             _rewardItemsConfig = SetupConfig(REWARD_ITEMS_CONFIG_FILE_NAME, new RewardItemsConfig());
+            _topVotersBenefitConfig = SetupConfig("TopVotersBenefitConfig.cfg", new TopVotersBenefitConfig());
             _timeSpentRewardsConfig = SetupConfig("TimeSpentRewardsConfig.cfg", new TimeSpentRewardsConfig());
             _refferalCodeReward = SetupConfig("ReferralCodeReward.cfg", new RefferalCodeReward());
             _eventCodeReward = SetupConfig("EventCodeReward.cfg", new EventCodeReward());
@@ -344,6 +347,7 @@ namespace VoteRewards
                 _rewardItemsConfig.Save();
                 _refferalCodeReward.Save();
                 _eventCodeReward.Save();
+                _topVotersBenefitConfig.Save();
                 Log.Info("Configuration Saved.");
             }
             catch (IOException e)

@@ -199,8 +199,12 @@
     <Compile Include="VoteRewards\Config\RefferalCodeReward.cs" />
     <Compile Include="VoteRewards\Config\RewardItemsConfig.cs" />
     <Compile Include="VoteRewards\Config\TimeSpentRewardsConfig.cs" />
+    <Compile Include="VoteRewards\Config\TopVotersBenefitConfig.cs" />
     <Compile Include="VoteRewards\GUI\EventCodeItemConfiguration.xaml.cs">
       <DependentUpon>EventCodeItemConfiguration.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="VoteRewards\GUI\TopVotersBenefit.xaml.cs">
+      <DependentUpon>TopVotersBenefit.xaml</DependentUpon>
     </Compile>
     <Compile Include="VoteRewards\GUI\ReferralItemConfiguration.xaml.cs">
       <DependentUpon>ReferralItemConfiguration.xaml</DependentUpon>
@@ -262,6 +266,7 @@
     <None Include="app.config" />
     <None Include="LICENSE" />
     <None Include="packages.config" />
+    <Compile Include="VoteRewards\Nexus\NexusManager.TopVotersBenefit.cs" />
     <None Include="VoteRewards\Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -269,6 +274,10 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="VoteRewards\GUI\EventCodeItemConfiguration.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="VoteRewards\GUI\TopVotersBenefit.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

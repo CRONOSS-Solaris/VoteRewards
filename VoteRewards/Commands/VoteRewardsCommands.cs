@@ -62,6 +62,19 @@ namespace VoteRewards
 
             var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig, Plugin.RefferalCodeReward);
 
+            // Nowa logika sprawdzania top 10 graczy
+            bool isTopVoter = false;
+            try
+            {
+                var topVoters = await Plugin.ApiHelper.GetTopVotersBySteamIdAsync();
+                isTopVoter = topVoters.Contains(steamId.ToString()); // Zakładamy, że GetTopVotersBySteamIdAsync zwraca listę stringów zawierających steamId graczy z top 10
+            }
+            catch (Exception ex)
+            {
+                VoteRewardsMain.Log.Warn("Failed to check the top voters: " + ex.Message);
+                // Można zdecydować, czy chcemy informować gracza o błędzie
+            }
+
             int voteStatus;
             try
             {
@@ -85,6 +98,7 @@ namespace VoteRewards
                     messages.Add("You have not voted yet. Please vote first.");
                     break;
                 case 1:
+                    // Standardowe nagrody
                     List<RewardItem> rewards = getRandomRewardsUtils.GetRandomRewards();
                     rewards.RemoveAll(item => item == null);
 
@@ -133,6 +147,39 @@ namespace VoteRewards
                         messages.Add("No reward available at the moment. Please try again later.");
                         VoteRewardsMain.Log.Warn("No reward item found for player " + steamId);
                     }
+
+                    // Dodatkowe nagrody dla top 10 graczy
+                    if (isTopVoter)
+                    {
+                        try
+                        {
+                            List<RewardItem> topRewards = getRandomRewardsUtils.GetRandomRewardsFromList(Plugin.TopVotersBenefitConfig.RewardItems);
+                            topRewards.RemoveAll(item => item == null);
+
+                            var successfulTopRewards = new List<string>();
+
+                            foreach (var reward in topRewards)
+                            {
+                                int randomAmount = getRandomRewardsUtils.GetRandomAmount(reward.AmountOne, reward.AmountTwo);
+                                bool rewardGranted = PlayerRewardManager.AwardPlayer(Context.Player.SteamUserId, reward, randomAmount, VoteRewardsMain.Log, Plugin.Config);
+                                if (rewardGranted)
+                                {
+                                    successfulTopRewards.Add($"{randomAmount}x {reward.ItemSubtypeId}");
+                                    VoteRewardsMain.Log.Info($"Player {steamId} received {randomAmount} of {reward.ItemSubtypeId} (Top Voter Bonus).");
+                                }
+                            }
+
+                            if (successfulTopRewards.Any())
+                            {
+                                messages.Add("As a top voter, you also received:");
+                                messages.AddRange(successfulTopRewards.Select(reward => $"{reward}"));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            VoteRewardsMain.Log.Warn("Failed to grant top voter rewards: " + ex.Message);
+                        }
+                    }
                     break;
                 case 2:
                     messages.Add("You have already claimed your vote reward.");
@@ -141,6 +188,7 @@ namespace VoteRewards
 
             VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
         }
+
 
         [Command("topvoters", "Shows top 10 voters of the month.")]
         [Permission(MyPromoteLevel.None)]

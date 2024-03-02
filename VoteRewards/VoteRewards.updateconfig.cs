@@ -98,5 +98,20 @@ namespace VoteRewards
 
             _eventCodeReward.Save();
         }
+
+        public void UpdateTopVotersBenefit(TopVotersBenefitConfig newConfig)
+        {
+            if (_topVotersBenefitConfig?.Data == null)
+            {
+                Log.Warn("TopVotersBenefit is not initialized.");
+                return;
+            }
+
+            // Aktualizacja wartości konfiguracji
+            _topVotersBenefitConfig.Data.RewardItems = newConfig.RewardItems;
+
+
+            _topVotersBenefitConfig.Save();
+        }
     }
 }
