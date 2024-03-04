@@ -34,7 +34,7 @@ namespace VoteRewards.Utils
                 }
 
                 string responseContent = await response.Content.ReadAsStringAsync();
-                Log.Info($"API(): API Response: {responseContent}");
+                LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"API(): API Response: {responseContent}");
 
                 if (responseContent.Contains("Error"))
                 {
@@ -70,7 +70,7 @@ namespace VoteRewards.Utils
                 }
 
                 string responseContent = await response.Content.ReadAsStringAsync();
-                Log.Info($"API(): API Response for setting vote as claimed: {responseContent}");
+                LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"API(): API Response for setting vote as claimed: {responseContent}");
 
                 if (responseContent.Contains("Error"))
                 {
@@ -109,7 +109,7 @@ namespace VoteRewards.Utils
                 }
 
                 string responseContent = await response.Content.ReadAsStringAsync();
-                Log.Info($"API(): API Response: {responseContent}");
+                LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"API(): API Response: {responseContent}");
 
                 return responseContent;
             }
@@ -139,7 +139,7 @@ namespace VoteRewards.Utils
                 }
 
                 string responseContent = await response.Content.ReadAsStringAsync();
-                Log.Info($"API(): API Response: {responseContent}");
+                LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"API(): API Response: {responseContent}");
 
                 return responseContent;
             }
