@@ -4,73 +4,79 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using VoteRewards.Nexus;
 using VoteRewards.Utils;
 
 namespace VoteRewards
 {
     public partial class TopVotersBenefit : Window
     {
-        public VoteRewardsMain Plugin { get; private set; }
+        public VoteRewardsMain Plugin { get; private set; } // Załóżmy, że Plugin to Twoja główna klasa logiki
 
         public TopVotersBenefit(VoteRewardsMain plugin)
         {
             InitializeComponent();
             Plugin = plugin;
-
-            // Ustawiamy DataContext okna na plugin
             DataContext = plugin;
-
-            // Ustawiamy źródło danych DataGrid
-            RewardItemsDataGrid.ItemsSource = Plugin.TopVotersBenefitConfig.RewardItems;
+            VoteRangeRewardsDataGrid.ItemsSource = Plugin.TopVotersBenefitConfig.VoteRangeRewards;
         }
 
-
-
-        private void AddRewardItemButton_OnClick(object sender, RoutedEventArgs e)
+        private void VoteRangeRewardsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Tworzymy nowy obiekt RewardItem i dodajemy go do listy
-            var newItem = new RewardItem();
-            Plugin.TopVotersBenefitConfig.RewardItems.Add(newItem);
-
-            // Odświeżamy DataGrid
-            RewardItemsDataGrid.Items.Refresh();
+            var selectedRange = VoteRangeRewardsDataGrid.SelectedItem as VoteRangeReward;
+            RewardItemsDataGrid.ItemsSource = selectedRange?.Rewards;
         }
 
-        private void DeleteRewardItemButton_OnClick(object sender, RoutedEventArgs e)
+        private void AddVoteRangeButton_Click(object sender, RoutedEventArgs e)
         {
-            // Pobieramy aktualnie wybrany przedmiot
-            var selectedItem = RewardItemsDataGrid.SelectedItem as RewardItem;
-
-            // Jeśli nic nie jest zaznaczone, nic nie robimy
-            if (selectedItem == null)
-                return;
-
-            // Usuwamy zaznaczony przedmiot z listy
-            Plugin.TopVotersBenefitConfig.RewardItems.Remove(selectedItem);
-
-            // Odświeżamy DataGrid
-            RewardItemsDataGrid.Items.Refresh();
+            // Przykład dodawania nowego zakresu głosowania
+            var newRange = new VoteRangeReward { MinVotes = 0, MaxVotes = 0 };
+            Plugin.TopVotersBenefitConfig.VoteRangeRewards.Add(newRange);
+            VoteRangeRewardsDataGrid.Items.Refresh();
         }
 
-        private void SaveButton_OnClick(object sender, RoutedEventArgs e)
+        private void RemoveVoteRangeButton_Click(object sender, RoutedEventArgs e)
         {
-            // Sprawdzanie każdego RewardItem
-            foreach (var item in Plugin.TopVotersBenefitConfig.RewardItems)
+            var selectedRange = VoteRangeRewardsDataGrid.SelectedItem as VoteRangeReward;
+            if (selectedRange != null)
             {
-                if (item.ChanceToDrop < 0.0 || item.ChanceToDrop > 100.0)
-                {
-                    // Wyświetlenie komunikatu o błędzie
-                    MessageBox.Show("Chance to Drop must be between 0.0 and 100.0", "Invalid Data", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return; // Przerywamy zapisywanie
-                }
+                Plugin.TopVotersBenefitConfig.VoteRangeRewards.Remove(selectedRange);
+                VoteRangeRewardsDataGrid.Items.Refresh();
+                RewardItemsDataGrid.ItemsSource = null; // Clear items when range is removed
+            }
+        }
+
+        private void AddRewardButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedRange = VoteRangeRewardsDataGrid.SelectedItem as VoteRangeReward;
+            if (selectedRange == null)
+            {
+                MessageBox.Show("Please select a vote range first.");
+                return;
             }
 
-            NexusManager.SendTopVotersBenefitUpdate(Plugin.TopVotersBenefitConfig);
+            // Upewnij się, że lista nagród dla wybranego zakresu głosów została zainicjowana
+            if (selectedRange.Rewards == null)
+            {
+                selectedRange.Rewards = new List<RewardItem>();
+            }
 
-            // Kontynuacja zapisywania, jeśli wszystko jest w porządku
-            Plugin.Save();
-            this.Close();
+            var newItem = new RewardItem();
+            selectedRange.Rewards.Add(newItem);
+
+            // Odśwież DataGrid z nagrodami dla aktualnie wybranego zakresu głosów
+            RewardItemsDataGrid.Items.Refresh();
+        }
+
+
+        private void RemoveRewardButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedRange = VoteRangeRewardsDataGrid.SelectedItem as VoteRangeReward;
+            var selectedReward = RewardItemsDataGrid.SelectedItem as RewardItem;
+            if (selectedRange != null && selectedReward != null)
+            {
+                selectedRange.Rewards.Remove(selectedReward);
+                RewardItemsDataGrid.Items.Refresh();
+            }
         }
 
         private void ItemTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -154,7 +160,23 @@ namespace VoteRewards
             return null;
         }
 
+        private void SaveVoteRanges_Click(object sender, RoutedEventArgs e)
+        {
+            Plugin.Save();
+            MessageBox.Show("Vote ranges saved successfully!");
+        }
+
+        private void SaveRewards_Click(object sender, RoutedEventArgs e)
+        {
+
+            if (VoteRangeRewardsDataGrid.SelectedItem == null)
+            {
+                MessageBox.Show("Please select a vote range first.");
+                return;
+            }
+
+            Plugin.Save();
+            MessageBox.Show("Rewards saved successfully!");
+        }
     }
 }
-
-//koniec

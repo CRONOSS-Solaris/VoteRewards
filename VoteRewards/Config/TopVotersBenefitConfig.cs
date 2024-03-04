@@ -1,10 +1,5 @@
 ﻿using ProtoBuf;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using VoteRewards.Utils;
 
 namespace VoteRewards.Config
 {
@@ -12,11 +7,12 @@ namespace VoteRewards.Config
     public class TopVotersBenefitConfig
     {
         [ProtoMember(1)]
-        public List<RewardItem> RewardItems { get; set; }
+        public List<VoteRangeReward> VoteRangeRewards { get; set; }
 
         public TopVotersBenefitConfig()
         {
-            RewardItems = new List<RewardItem>();
+            VoteRangeRewards = new List<VoteRangeReward>();
         }
     }
+
 }

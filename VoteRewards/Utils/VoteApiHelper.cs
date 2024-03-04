@@ -115,8 +115,7 @@ namespace VoteRewards.Utils
             }
         }
         
-        //previous
-        public async Task<string> GetTopVotersBySteamIdAsync(string period = "current", int limit = 10, string rankBy = "steamid")
+        public async Task<string> GetTopVotersBySteamIdAsync(string period = "previous", int limit = 10000, string rankBy = "steamid")
         {
             string apiUrl = $"https://space-engineers.com/api/?object=servers&element=voters&key={ServerApiKey}&month={period}&format=json&limit={limit}&rank={rankBy}";
 

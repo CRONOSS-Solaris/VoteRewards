@@ -108,7 +108,7 @@ namespace VoteRewards
             }
 
             // Aktualizacja wartości konfiguracji
-            _topVotersBenefitConfig.Data.RewardItems = newConfig.RewardItems;
+            _topVotersBenefitConfig.Data.VoteRangeRewards = newConfig.VoteRangeRewards;
 
 
             _topVotersBenefitConfig.Save();

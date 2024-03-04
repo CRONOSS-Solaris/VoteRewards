@@ -58,7 +58,7 @@ namespace VoteRewards
         [Permission(MyPromoteLevel.None)]
         public async void TopRewardCommand()
         {
-            var steamId = Context.Player.SteamUserId;
+            var steamId = Context.Player.SteamUserId.ToString();
             var identityId = Context.Player.IdentityId;
 
             var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig, Plugin.RefferalCodeReward);
@@ -66,55 +66,54 @@ namespace VoteRewards
             PlayerRewardTracker rewardTracker = new PlayerRewardTracker(Path.Combine(VoteRewardsMain.Instance.StoragePath, "VoteReward", "PlayerData.xml"));
 
             // Sprawdzanie ostatniej daty odbioru nagrody
-            var lastClaimDate = rewardTracker.GetLastRewardClaimDate(steamId);
+            var lastClaimDate = rewardTracker.GetLastRewardClaimDate(Context.Player.SteamUserId);
             if (lastClaimDate.HasValue && (DateTime.UtcNow - lastClaimDate.Value).TotalDays < 30)
             {
                 VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "You can only claim the top voter reward once a month. Please try again later.", Color.Green, Context.Player.SteamUserId);
                 return;
             }
 
+            // Pobieranie liczby głosów dla gracza
+            string topVotersResponse = await Plugin.ApiHelper.GetTopVotersBySteamIdAsync();
+            var voterResponse = JsonConvert.DeserializeObject<VoterResponse>(topVotersResponse);
+            var playerVotes = voterResponse?.Voters?.Find(v => v.Nickname == Context.Player.DisplayName)?.Votes ?? 0;
+
             List<string> messages = new List<string> { $"{Plugin.Config.NotificationPrefix}" };
 
-            bool isTopVoter = false;
-            try
+            bool rewardGrantedFlag = false;
+            // Znajdowanie odpowiedniego zakresu głosów i przyznawanie nagród
+            foreach (var voteRangeReward in Plugin.TopVotersBenefitConfig.VoteRangeRewards)
             {
-                var topVoters = await Plugin.ApiHelper.GetTopVotersBySteamIdAsync();
-                isTopVoter = topVoters.Contains(steamId.ToString());
-            }
-            catch (Exception ex)
-            {
-                VoteRewardsMain.Log.Warn("Failed to check the top voters: " + ex.Message);
-            }
-
-            if (isTopVoter)
-            {
-                List<RewardItem> topRewards = getRandomRewardsUtils.GetRandomRewardsFromList(Plugin.TopVotersBenefitConfig.RewardItems);
-                topRewards.RemoveAll(item => item == null);
-
-                var successfulTopRewards = new List<string>();
-
-                foreach (var reward in topRewards)
+                if (playerVotes >= voteRangeReward.MinVotes && playerVotes <= voteRangeReward.MaxVotes)
                 {
-                    int randomAmount = getRandomRewardsUtils.GetRandomAmount(reward.AmountOne, reward.AmountTwo);
-                    bool rewardGranted = PlayerRewardManager.AwardPlayer(Context.Player.SteamUserId, reward, randomAmount, VoteRewardsMain.Log, Plugin.Config);
-                    if (rewardGranted)
+                    var successfulTopRewards = new List<string>();
+
+                    foreach (var reward in voteRangeReward.Rewards)
                     {
-                        successfulTopRewards.Add($"{randomAmount}x {reward.ItemSubtypeId}");
-                        VoteRewardsMain.Log.Info($"Player {steamId} received {randomAmount} of {reward.ItemSubtypeId} (Top Voter Bonus).");
+                        int randomAmount = getRandomRewardsUtils.GetRandomAmount(reward.AmountOne, reward.AmountTwo);
+                        bool rewardGranted = PlayerRewardManager.AwardPlayer(ulong.Parse(steamId), reward, randomAmount, VoteRewardsMain.Log, Plugin.Config);
+                        if (rewardGranted)
+                        {
+                            successfulTopRewards.Add($"{randomAmount}x {reward.ItemSubtypeId}");
+                            VoteRewardsMain.Log.Info($"Player {steamId} received {randomAmount} of {reward.ItemSubtypeId}.");
+                            rewardGrantedFlag = true;
+                        }
                     }
-                }
 
-                if (successfulTopRewards.Any())
-                {
-                    messages.Add("As a top voter, you also received:");
-                    messages.AddRange(successfulTopRewards.Select(reward => $"{reward}"));
-                    // Aktualizacja daty ostatniego odbioru nagrody
-                    rewardTracker.UpdateLastRewardClaimDate(steamId, DateTime.UtcNow);
+                    if (successfulTopRewards.Any())
+                    {
+                        messages.Add("Based on your votes, you received:");
+                        messages.AddRange(successfulTopRewards.Select(reward => $"{reward}"));
+                        // Aktualizacja daty ostatniego odbioru nagrody
+                        rewardTracker.UpdateLastRewardClaimDate(Context.Player.SteamUserId, DateTime.UtcNow);
+                    }
+                    break; // Przerwanie pętli po znalezieniu i przyznaniu nagród dla zakresu
                 }
             }
-            else
+
+            if (!rewardGrantedFlag)
             {
-                messages.Add("You are not eligible for the top voter reward.");
+                messages.Add("You did not reach the vote threshold for a reward.");
             }
 
             VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
