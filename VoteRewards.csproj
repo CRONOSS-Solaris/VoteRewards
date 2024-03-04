@@ -233,6 +233,7 @@
     <Compile Include="VoteRewards\Utils\ItemLoader.cs" />
     <Compile Include="VoteRewards\Utils\LoggerHelper.cs" />
     <Compile Include="VoteRewards\Utils\PlayerRewardManager.cs" />
+    <Compile Include="VoteRewards\Utils\PlayerRewardTracker.cs" />
     <Compile Include="VoteRewards\Utils\PlayerTimeTracker.cs" />
     <Compile Include="VoteRewards\Utils\ReferralCode.cs" />
     <Compile Include="VoteRewards\Utils\ReferralCodeManager.cs" />
