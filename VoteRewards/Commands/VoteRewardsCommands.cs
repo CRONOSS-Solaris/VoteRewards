@@ -106,7 +106,7 @@ namespace VoteRewards
                     {
                         try
                         {
-                            await Plugin.ApiHelper.SetVoteAsClaimedAsync(steamId);
+                            //await Plugin.ApiHelper.SetVoteAsClaimedAsync(steamId);
 
                             var successfulRewards = new List<string>();
 
@@ -228,53 +228,53 @@ namespace VoteRewards
 
 
 
-        //[Command("subtracttime", "Subtracts time from a player's total playtime.")]
-        //[Permission(MyPromoteLevel.Admin)]
-        //public void SubtractTimeCommand(string playerIdentifier, int minutes)
-        //{
-        //    ulong steamId;
-        //    if (!ulong.TryParse(playerIdentifier, out steamId))
-        //    {
-        //        // Jeśli nie jest to SteamID, spróbuj znaleźć gracza po NickName
-        //        var player = Plugin.PlayerTimeTracker.FindPlayerByNickName(playerIdentifier);
-        //        if (player.HasValue)
-        //        {
-        //            steamId = player.Value.Item1;
-        //        }
-        //        else
-        //        {
-        //            Context.Respond($"Player with NickName '{playerIdentifier}' not found.");
-        //            return;
-        //        }
-        //    }
+        [Command("subtracttime", "Subtracts time from a player's total playtime.")]
+        [Permission(MyPromoteLevel.Admin)]
+        public void SubtractTimeCommand(string playerIdentifier, int minutes)
+        {
+            ulong steamId;
+            if (!ulong.TryParse(playerIdentifier, out steamId))
+            {
+                // Jeśli nie jest to SteamID, spróbuj znaleźć gracza po NickName
+                var player = Plugin.PlayerTimeTracker.FindPlayerByNickName(playerIdentifier);
+                if (player.HasValue)
+                {
+                    steamId = player.Value.Item1;
+                }
+                else
+                {
+                    Context.Respond($"Player with NickName '{playerIdentifier}' not found.");
+                    return;
+                }
+            }
 
-        //    TimeSpan timeToSubtract = TimeSpan.FromMinutes(minutes);
-        //    Plugin.PlayerTimeTracker.SubtractPlayerTime(steamId, timeToSubtract);
-        //    Context.Respond($"Subtracted {minutes} minutes from player's (SteamID: {steamId}) playtime.");
-        //}
+            TimeSpan timeToSubtract = TimeSpan.FromMinutes(minutes);
+            Plugin.PlayerTimeTracker.SubtractPlayerTime(steamId, timeToSubtract);
+            Context.Respond($"Subtracted {minutes} minutes from player's (SteamID: {steamId}) playtime.");
+        }
 
-        //[Command("topplaytime", "Shows top 5 players with the most time spent on the server.")]
-        //[Permission(MyPromoteLevel.None)]
-        //public void ShowTopPlayersCommand()
-        //{
-        //    var topPlayers = Plugin.PlayerTimeTracker.GetTopPlayers(5);
-        //    if (topPlayers.Count == 0)
-        //    {
-        //        VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", "No player data available.", Color.Red, Context.Player.SteamUserId);
-        //        return;
-        //    }
+        [Command("topplaytime", "Shows top 5 players with the most time spent on the server.")]
+        [Permission(MyPromoteLevel.None)]
+        public void ShowTopPlayersCommand()
+        {
+            var topPlayers = Plugin.PlayerTimeTracker.GetTopPlayers(5);
+            if (topPlayers.Count == 0)
+            {
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", "No player data available.", Color.Red, Context.Player.SteamUserId);
+                return;
+            }
 
-        //    string response = "Top 5 players by time spent on the server:\n";
-        //    int rank = 1;
-        //    foreach (var player in topPlayers)
-        //    {
-        //        var totalMinutes = (long)player.TotalTimeSpent.TotalMinutes;
-        //        response += $"{rank}. {player.NickName}: {totalMinutes} minutes\n";
-        //        rank++;
-        //    }
+            string response = "Top 5 players by time spent on the server:\n";
+            int rank = 1;
+            foreach (var player in topPlayers)
+            {
+                var totalMinutes = (long)player.TotalTimeSpent.TotalMinutes;
+                response += $"{rank}. {player.NickName}: {totalMinutes} minutes\n";
+                rank++;
+            }
 
-        //    VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", response, Color.Green, Context.Player.SteamUserId);
-        //}
+            VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", response, Color.Green, Context.Player.SteamUserId);
+        }
 
     }
 }

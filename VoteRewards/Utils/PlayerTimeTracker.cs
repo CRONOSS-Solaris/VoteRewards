@@ -1,218 +1,194 @@
-﻿//using NLog;
-//using System;
-//using System.Collections.Generic;
-//using System.IO;
-//using System.Linq;
-//using System.Xml.Linq;
-//using Torch.API;
-//using VoteRewards.Nexus;
-//using VoteRewards.Utils;
+﻿using NLog;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Xml.Linq;
+using Torch.API;
+using VoteRewards.Nexus;
+using VoteRewards.Utils;
 
-//namespace VoteRewards
-//{
-//    public class PlayerTimeTracker
-//    {
-//        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-//        private readonly VoteRewardsConfig _config;
-//        private readonly Dictionary<ulong, (DateTime JoinTime, string NickName, TimeSpan TotalTimeSpent)> _playerData = new Dictionary<ulong, (DateTime, string, TimeSpan)>();
-//        private readonly string _dataFilePath;
+namespace VoteRewards
+{
+    public class PlayerTimeTracker
+    {
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+        private readonly ConcurrentDictionary<ulong, (DateTime JoinTime, string NickName, TimeSpan TotalTimeSpent)> _playerData = new ConcurrentDictionary<ulong, (DateTime, string, TimeSpan)>();
+        private readonly string _dataFilePath;
 
-//        public PlayerTimeTracker(VoteRewardsConfig config)
-//        {
-//            if (config == null)
-//            {
-//                Log.Error("PlayerTimeTracker initialization failed: config is null.");
-//                return;
-//            }
+        public PlayerTimeTracker()
+        {
+            _dataFilePath = Path.Combine(VoteRewardsMain.Instance.StoragePath, "VoteReward", "PlayerTimeData.xml");
 
-//            _config = config;
-//            _dataFilePath = Path.Combine(VoteRewardsMain.Instance.StoragePath, "VoteReward", "PlayerTimeData.xml");
+            InitializeDirectory();
+            LoadPlayerTimes();
+        }
 
-//            InitializeDirectory();
-//            LoadPlayerTimes();
-//        }
+        private void InitializeDirectory()
+        {
+            try
+            {
+                var directoryPath = Path.GetDirectoryName(_dataFilePath) ?? string.Empty;
+                Directory.CreateDirectory(directoryPath);
 
-//        private void InitializeDirectory()
-//        {
-//            try
-//            {
-//                var directoryPath = Path.GetDirectoryName(_dataFilePath);
-//                if (!Directory.Exists(directoryPath))
-//                {
-//                    Directory.CreateDirectory(directoryPath ?? string.Empty);
-//                    LoggerHelper.DebugLog(Log, _config, "Created directory for player time data.");
-//                }
+                if (!File.Exists(_dataFilePath))
+                {
+                    var newDoc = new XDocument(new XElement("Players"));
+                    newDoc.Save(_dataFilePath);
+                    LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, "Created new XML file for player time data.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error occurred while initializing PlayerTimeTracker directory:");
+            }
+        }
 
-//                if (!File.Exists(_dataFilePath))
-//                {
-//                    XDocument newDoc = new XDocument(new XElement("Players"));
-//                    newDoc.Save(_dataFilePath);
-//                    LoggerHelper.DebugLog(Log, _config, "Created new XML file for player time data.");
-//                }
-//            }
-//            catch (Exception ex)
-//            {
-//                Log.Error(ex, "Error occurred while initializing PlayerTimeTracker directory:");
-//            }
-//        }
+        public void OnPlayerJoined(IPlayer player)
+        {
+            LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Player joined: {player.Name} (SteamID: {player.SteamId})");
 
-//        public void OnPlayerJoined(IPlayer player)
-//        {
-//            LoggerHelper.DebugLog(Log, _config, $"Player joined: {player.Name} (SteamID: {player.SteamId})");
+            _playerData.AddOrUpdate(player.SteamId,
+                (DateTime.UtcNow, player.Name, TimeSpan.Zero),
+                (key, existingValue) => (DateTime.UtcNow, player.Name, existingValue.TotalTimeSpent));
+        }
 
-//            // Sprawdź, czy gracz ma już zapisany czas
-//            if (_playerData.TryGetValue(player.SteamId, out var existingPlayerInfo))
-//            {
-//                // Ustawienie aktualnego czasu dołączenia, zachowując wcześniej zapisany całkowity czas spędzony
-//                _playerData[player.SteamId] = (DateTime.UtcNow, player.Name, existingPlayerInfo.TotalTimeSpent);
-//            }
-//            else
-//            {
-//                // Nowy gracz, zacznij od zera
-//                _playerData[player.SteamId] = (DateTime.UtcNow, player.Name, TimeSpan.Zero);
-//            }
-//        }
+        public void OnPlayerLeft(IPlayer player)
+        {
+            LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Player left: {player.Name} (SteamID: {player.SteamId})");
+            if (_playerData.TryGetValue(player.SteamId, out var playerInfo))
+            {
+                var timeSpent = DateTime.UtcNow - playerInfo.JoinTime;
+                var totalTimeSpent = playerInfo.TotalTimeSpent + timeSpent;
+                UpdatePlayerData(player.SteamId, player.Name, totalTimeSpent);
 
-//        public void OnPlayerLeft(IPlayer player)
-//        {
-//            LoggerHelper.DebugLog(Log, _config, $"Player left: {player.Name} (SteamID: {player.SteamId})");
-//            if (_playerData.TryGetValue(player.SteamId, out var playerInfo))
-//            {
-//                var timeSpent = DateTime.UtcNow - playerInfo.JoinTime;
-//                var totalTimeSpent = playerInfo.TotalTimeSpent + timeSpent;
-//                UpdatePlayerData(player.SteamId, player.Name, totalTimeSpent);
+                // Asynchronously save player time
+                Task.Run(() => SavePlayerTimeAsync(player.SteamId, player.Name, totalTimeSpent));
 
-//                // Zapisz zmiany do pliku XML
-//                SavePlayerTime(player.SteamId, player.Name, totalTimeSpent);
+                // Asynchronously synchronize data with other servers
+                Task.Run(() => NexusManager.SendPlayerTimeDataToAllServers(player.SteamId, player.Name, totalTimeSpent));
+            }
+        }
 
-//                // Synchronizuj dane z innymi serwerami
-//                NexusManager.SendPlayerTimeDataToAllServers(player.SteamId, player.Name, totalTimeSpent);
-//            }
-//        }
+        public void UpdatePlayerData(ulong steamId, string nickName, TimeSpan totalTimeSpent)
+        {
+            // Aktualizacja danych gracza lub dodanie nowego, jeśli nie istnieje
+            var playerInfo = _playerData.GetOrAdd(steamId, (DateTime.UtcNow, nickName, totalTimeSpent));
+            if (playerInfo.JoinTime != DateTime.UtcNow)
+            {
+                // Gracz istnieje, aktualizujemy jego dane
+                _playerData[steamId] = (playerInfo.JoinTime, nickName, totalTimeSpent + playerInfo.TotalTimeSpent);
+            }
+        }
 
-//        public void UpdatePlayerData(ulong steamId, string nickName, TimeSpan totalTimeSpent, bool isNewPlayer = false)
-//        {
-//            if (isNewPlayer || !_playerData.ContainsKey(steamId))
-//            {
-//                _playerData[steamId] = (DateTime.UtcNow, nickName, totalTimeSpent);
-//            }
-//            else
-//            {
-//                _playerData[steamId] = (_playerData[steamId].JoinTime, nickName, totalTimeSpent);
-//            }
-//        }
+        public async Task SaveAllPlayerTimesAsync()
+        {
+            Log.Info("Saving all player times asynchronously.");
+            var tasks = _playerData.Select(kvp => SavePlayerTimeAsync(kvp.Key, kvp.Value.NickName, kvp.Value.TotalTimeSpent));
+            await Task.WhenAll(tasks);
+        }
 
-//        public void SaveAllPlayerTimes()
-//        {
-//            Log.Info("Saving all player times.");
-//            foreach (var (steamId, playerInfo) in _playerData)
-//            {
-//                SavePlayerTime(steamId, playerInfo.NickName, playerInfo.TotalTimeSpent);
-//                NexusManager.SendPlayerTimeDataToAllServers(steamId, playerInfo.NickName, playerInfo.TotalTimeSpent);
-//            }
-//        }
+        public async Task SavePlayerTimeAsync(ulong steamId, string nickName, TimeSpan totalTimeSpent)
+        {
+            try
+            {
+                var doc = File.Exists(_dataFilePath) ? XDocument.Load(_dataFilePath) : new XDocument(new XElement("Players"));
+                var existingPlayer = doc.Root.Elements("Player").FirstOrDefault(x => x.Attribute("SteamID").Value == steamId.ToString());
+                var totalMinutes = (long)totalTimeSpent.TotalMinutes;
 
-//        public void SavePlayerTime(ulong steamId, string nickName, TimeSpan totalTimeSpent)
-//        {
-//            try
-//            {
-//                XDocument doc = File.Exists(_dataFilePath) ? XDocument.Load(_dataFilePath) : new XDocument(new XElement("Players"));
-//                var existingPlayer = doc.Root.Elements("Player").FirstOrDefault(x => x.Attribute("SteamID").Value == steamId.ToString());
-//                long totalMinutes = (long)totalTimeSpent.TotalMinutes; // Konwersja na liczbę całkowitą
+                if (existingPlayer != null)
+                {
+                    existingPlayer.SetElementValue("TotalTimeSpent", totalMinutes);
+                }
+                else
+                {
+                    doc.Root.Add(new XElement("Player",
+                        new XAttribute("SteamID", steamId),
+                        new XElement("NickName", nickName),
+                        new XElement("TotalTimeSpent", totalMinutes)));
+                }
 
-//                if (existingPlayer != null)
-//                {
-//                    existingPlayer.SetElementValue("TotalTimeSpent", totalMinutes);
-//                }
-//                else
-//                {
-//                    doc.Root.Add(new XElement("Player",
-//                        new XAttribute("SteamID", steamId),
-//                        new XElement("NickName", nickName),
-//                        new XElement("TotalTimeSpent", totalMinutes)));
-//                }
+                await Task.Run(() => doc.Save(_dataFilePath)); // Offload to background thread
+                LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Saved player time data for {nickName} (SteamID: {steamId}).");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"Error occurred while saving player time data for {nickName} (SteamID: {steamId}):");
+            }
+        }
 
-//                doc.Save(_dataFilePath);
-//                LoggerHelper.DebugLog(Log, _config, $"Saved player time data for {nickName} (SteamID: {steamId}).");
-//            }
-//            catch (Exception ex)
-//            {
-//                Log.Error(ex, $"Error occurred while saving player time data for {nickName} (SteamID: {steamId}):");
-//            }
-//        }
+        private void LoadPlayerTimes()
+        {
+            try
+            {
+                if (File.Exists(_dataFilePath))
+                {
+                    var doc = XDocument.Load(_dataFilePath);
+                    foreach (var playerElement in doc.Root.Elements("Player"))
+                    {
+                        var steamId = ulong.Parse(playerElement.Attribute("SteamID").Value);
+                        var nickName = playerElement.Element("NickName").Value;
+                        var minutes = double.Parse(playerElement.Element("TotalTimeSpent").Value);
+                        _playerData[steamId] = (DateTime.MinValue, nickName, TimeSpan.FromMinutes(minutes));
+                    }
+                    LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, "Loaded player times from XML file.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error occurred while loading player times from XML file:");
+            }
+        }
 
-//        private void LoadPlayerTimes()
-//        {
-//            try
-//            {
-//                if (File.Exists(_dataFilePath))
-//                {
-//                    var doc = XDocument.Load(_dataFilePath);
-//                    foreach (var playerElement in doc.Root.Elements("Player"))
-//                    {
-//                        ulong steamId = ulong.Parse(playerElement.Attribute("SteamID").Value);
-//                        string nickName = playerElement.Element("NickName").Value;
-//                        double minutes = double.Parse(playerElement.Element("TotalTimeSpent").Value);
-//                        _playerData[steamId] = (DateTime.MinValue, nickName, TimeSpan.FromMinutes(minutes));
-//                    }
-//                    LoggerHelper.DebugLog(Log, _config, "Loaded player times from XML file.");
-//                }
-//            }
-//            catch (Exception ex)
-//            {
-//                Log.Error (ex, "Error occurred while loading player times from XML file:");
-//            }
-//        }
+        public TimeSpan GetTotalTimeSpent(ulong steamId)
+        {
+            if (_playerData.TryGetValue(steamId, out var playerInfo))
+            {
+                return playerInfo.TotalTimeSpent;
+            }
+            return TimeSpan.Zero;
+        }
 
-//        public TimeSpan GetTotalTimeSpent(ulong steamId)
-//        {
-//            if (_playerData.TryGetValue(steamId, out var playerInfo))
-//            {
-//                return playerInfo.TotalTimeSpent;
-//            }
-//            return TimeSpan.Zero;
-//        }
+        public List<(string NickName, TimeSpan TotalTimeSpent)> GetTopPlayers(int count)
+        {
+            return _playerData.Values
+                .OrderByDescending(p => p.TotalTimeSpent)
+                .Take(count)
+                .Select(p => (p.NickName, p.TotalTimeSpent))
+                .ToList();
+        }
 
-//        public List<(string NickName, TimeSpan TotalTimeSpent)> GetTopPlayers(int count)
-//        {
-//            return _playerData.Values
-//                .OrderByDescending(p => p.TotalTimeSpent)
-//                .Take(count)
-//                .Select(p => (p.NickName, p.TotalTimeSpent))
-//                .ToList();
-//        }
+        public void SubtractPlayerTime(ulong steamId, TimeSpan timeToSubtract)
+        {
+            if (_playerData.TryGetValue(steamId, out var playerInfo))
+            {
+                var newTotalTime = playerInfo.TotalTimeSpent - timeToSubtract;
+                if (newTotalTime < TimeSpan.Zero)
+                {
+                    newTotalTime = TimeSpan.Zero;
+                }
 
-//        public void SubtractPlayerTime(ulong steamId, TimeSpan timeToSubtract)
-//        {
-//            if (_playerData.TryGetValue(steamId, out var playerInfo))
-//            {
-//                var newTotalTime = playerInfo.TotalTimeSpent - timeToSubtract;
-//                if (newTotalTime < TimeSpan.Zero)
-//                {
-//                    newTotalTime = TimeSpan.Zero;
-//                }
+                _playerData[steamId] = (playerInfo.JoinTime, playerInfo.NickName, newTotalTime);
+                Task.Run(() => SavePlayerTimeAsync(steamId, playerInfo.NickName, newTotalTime));
+            }
+            else
+            {
+                Log.Warn($"Player with SteamID {steamId} not found in time tracker.");
+            }
+        }
 
-//                _playerData[steamId] = (playerInfo.JoinTime, playerInfo.NickName, newTotalTime);
-//                SavePlayerTime(steamId, playerInfo.NickName, newTotalTime);
-//            }
-//            else
-//            {
-//                Log.Warn($"Player with SteamID {steamId} not found in time tracker.");
-//            }
-//        }
-
-//        // Metoda pomocnicza do wyszukiwania gracza po NickName
-//        public (ulong, string)? FindPlayerByNickName(string nickName)
-//        {
-//            foreach (var kvp in _playerData)
-//            {
-//                if (kvp.Value.NickName.Equals(nickName, StringComparison.OrdinalIgnoreCase))
-//                {
-//                    return (kvp.Key, kvp.Value.NickName);
-//                }
-//            }
-//            return null;
-//        }
-
-//    }
-//}
+        public (ulong, string)? FindPlayerByNickName(string nickName)
+        {
+            foreach (var kvp in _playerData)
+            {
+                if (kvp.Value.NickName.Equals(nickName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return (kvp.Key, kvp.Value.NickName);
+                }
+            }
+            return null;
+        }
+    }
+}

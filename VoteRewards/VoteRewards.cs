@@ -55,7 +55,7 @@ namespace VoteRewards
         private IMultiplayerManagerBase _multiplayerManager;
         private Dictionary<ulong, TimeSpan> _playerTimeSpent = new Dictionary<ulong, TimeSpan>();
         private Timer _updatePlayerTimeSpentTimer;
-        //public PlayerTimeTracker PlayerTimeTracker { get; private set; }
+        public PlayerTimeTracker PlayerTimeTracker { get; private set; }
 
         public VoteRewardsConfig Config => _config?.Data;
         public RewardItemsConfig RewardItemsConfig => _rewardItemsConfig?.Data;
@@ -170,8 +170,8 @@ namespace VoteRewards
                     ConnectNexus();
 
                     _updatePlayerTimeSpentTimer = new Timer(UpdatePlayerTimeSpent, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
-                    //PlayerTimeTracker = new PlayerTimeTracker(_config.Data);
-                    
+                    PlayerTimeTracker = new PlayerTimeTracker();
+
                     _multiplayerManager = session.Managers.GetManager<IMultiplayerManagerBase>();
                     if (_multiplayerManager == null)
                     {
@@ -182,8 +182,8 @@ namespace VoteRewards
                         LoggerHelper.DebugLog(Log, _config.Data, "Multiplayer manager initialized.");
                         _multiplayerManager.PlayerJoined += OnPlayerJoined;
                         _multiplayerManager.PlayerLeft += OnPlayerLeft;
-                        //_multiplayerManager.PlayerJoined += PlayerTimeTracker.OnPlayerJoined;
-                        //_multiplayerManager.PlayerLeft += PlayerTimeTracker.OnPlayerLeft;
+                        _multiplayerManager.PlayerJoined += PlayerTimeTracker.OnPlayerJoined;
+                        _multiplayerManager.PlayerLeft += PlayerTimeTracker.OnPlayerLeft;
                     }
 
                     ItemLoader.LoadAvailableItemTypesAndSubtypes(AvailableItemTypes, AvailableItemSubtypes, Log, Config);
