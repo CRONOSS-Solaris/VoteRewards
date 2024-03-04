@@ -20,7 +20,7 @@ namespace VoteRewards
 
         public PlayerTimeTracker()
         {
-            _dataFilePath = Path.Combine(VoteRewardsMain.Instance.StoragePath, "VoteReward", "PlayerTimeData.xml");
+            _dataFilePath = Path.Combine(VoteRewardsMain.Instance.StoragePath, "VoteReward", "PlayerData.xml");
 
             InitializeDirectory();
             LoadPlayerTimes();
@@ -50,27 +50,50 @@ namespace VoteRewards
         {
             LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Player joined: {player.Name} (SteamID: {player.SteamId})");
 
+            var isNewPlayer = !_playerData.ContainsKey(player.SteamId);
             _playerData.AddOrUpdate(player.SteamId,
                 (DateTime.UtcNow, player.Name, TimeSpan.Zero),
                 (key, existingValue) => (DateTime.UtcNow, player.Name, existingValue.TotalTimeSpent));
+
+            if (isNewPlayer)
+            {
+                // Asynchronicznie zapisz czas gracza jako zero, jeśli to nowy gracz
+                Task.Run(() => SavePlayerTimeAsync(player.SteamId, player.Name, TimeSpan.Zero));
+
+                // Asynchroniczna synchronizacja danych z innymi serwerami
+                Task.Run(() => NexusManager.SendPlayerTimeDataToAllServers(player.SteamId, player.Name, TimeSpan.Zero));
+            }
         }
+
 
         public void OnPlayerLeft(IPlayer player)
         {
             LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Player left: {player.Name} (SteamID: {player.SteamId})");
             if (_playerData.TryGetValue(player.SteamId, out var playerInfo))
             {
-                var timeSpent = DateTime.UtcNow - playerInfo.JoinTime;
-                var totalTimeSpent = playerInfo.TotalTimeSpent + timeSpent;
+                // Obliczenie czasu spędzonego podczas tej sesji
+                var timeSpentThisSession = DateTime.UtcNow - playerInfo.JoinTime;
+
+                // Obliczenie całkowitego czasu spędzonego na serwerze
+                var totalTimeSpent = playerInfo.TotalTimeSpent + timeSpentThisSession;
+
+                // Aktualizacja danych gracza
                 UpdatePlayerData(player.SteamId, player.Name, totalTimeSpent);
 
-                // Asynchronously save player time
+                // Logowanie czasu spędzonego podczas tej sesji
+                LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Player {player.Name} (SteamID: {player.SteamId}) spent {timeSpentThisSession.TotalMinutes} minutes on the server this session.");
+
+                // Logowanie całkowitego czasu spędzonego na serwerze, wraz z wartościami, które są do siebie dodawane
+                LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Total time spent by {player.Name} (SteamID: {player.SteamId}) on the server: previously {playerInfo.TotalTimeSpent.TotalMinutes} minutes + {timeSpentThisSession.TotalMinutes} minutes this session = {totalTimeSpent.TotalMinutes} minutes.");
+
+                // Asynchroniczne zapisywanie czasu gracza
                 Task.Run(() => SavePlayerTimeAsync(player.SteamId, player.Name, totalTimeSpent));
 
-                // Asynchronously synchronize data with other servers
+                // Asynchroniczna synchronizacja danych z innymi serwerami
                 Task.Run(() => NexusManager.SendPlayerTimeDataToAllServers(player.SteamId, player.Name, totalTimeSpent));
             }
         }
+
 
         public void UpdatePlayerData(ulong steamId, string nickName, TimeSpan totalTimeSpent)
         {
@@ -110,7 +133,7 @@ namespace VoteRewards
                         new XElement("TotalTimeSpent", totalMinutes)));
                 }
 
-                await Task.Run(() => doc.Save(_dataFilePath)); // Offload to background thread
+                await Task.Run(() => doc.Save(_dataFilePath));
                 LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Saved player time data for {nickName} (SteamID: {steamId}).");
             }
             catch (Exception ex)
