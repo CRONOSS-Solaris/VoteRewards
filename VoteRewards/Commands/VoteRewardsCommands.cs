@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using Torch.Commands;
 using Torch.Commands.Permissions;
+using VoteRewards.Nexus;
 using VoteRewards.Utils;
 using VRage.Game.ModAPI;
 using VRageMath;
@@ -106,8 +107,9 @@ namespace VoteRewards
                         messages.AddRange(successfulTopRewards.Select(reward => $"{reward}"));
                         // Aktualizacja daty ostatniego odbioru nagrody
                         rewardTracker.UpdateLastRewardClaimDate(Context.Player.SteamUserId, DateTime.UtcNow);
+                        NexusManager.SendPlayerRewardTrackerToAllServers(Context.Player.SteamUserId, DateTime.UtcNow);
                     }
-                    break; // Przerwanie pętli po znalezieniu i przyznaniu nagród dla zakresu
+                    break;
                 }
             }
 

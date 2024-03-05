@@ -2,6 +2,8 @@
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using Nexus.API;
+using VoteRewards.Nexus;
 
 namespace VoteRewards.Utils
 {
@@ -62,6 +64,11 @@ namespace VoteRewards.Utils
             }
             _doc.Save(_dataFilePath);
         }
-    }
 
+        public static void HandleReceivedPlayerRewardTrackerData(ulong steamId, DateTime claimDate)
+        {
+            var rewardTracker = new PlayerRewardTracker(Path.Combine(VoteRewardsMain.Instance.StoragePath, "VoteReward", "PlayerData.xml"));
+            rewardTracker.UpdateLastRewardClaimDate(steamId, claimDate);
+        }
+    }
 }

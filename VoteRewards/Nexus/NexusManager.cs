@@ -70,6 +70,9 @@ namespace VoteRewards.Nexus
                     case NexusMessage.MessageType.PlayerTimeTracker:
                         HandlePlayerTimeTrackerMessage(message);
                         break;
+                    case NexusMessage.MessageType.PlayerRewardTracker:
+                        HandlePlayerRewardTrackerMessage(message);
+                        break;
 
                     default:
                         Log.Warn($"Received an unknown type of Nexus message. Type: {message.Type}");

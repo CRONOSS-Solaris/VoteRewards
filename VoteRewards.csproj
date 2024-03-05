@@ -221,6 +221,7 @@
     <Compile Include="VoteRewards\Nexus\NexusManager.cs" />
     <Compile Include="VoteRewards\Nexus\NexusManager.EventCode.cs" />
     <Compile Include="VoteRewards\Nexus\NexusManager.EventCodeReward.cs" />
+    <Compile Include="VoteRewards\Nexus\NexusManager.PlayerRewardTracker.cs" />
     <Compile Include="VoteRewards\Nexus\NexusManager.PlayerTimeTracker.cs" />
     <Compile Include="VoteRewards\Nexus\NexusManager.RefferalCode.cs" />
     <Compile Include="VoteRewards\Nexus\NexusManager.RefferalCodeReward.cs" />
