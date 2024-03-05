@@ -118,7 +118,7 @@ namespace VoteRewards.Nexus
                 Data = data;
                 ConfigData = new byte[0];
             }
-            else if (messageType == MessageType.PlayerTimeTracker)
+            else if (messageType == MessageType.PlayerRewardTracker)
             {
                 Data = data;
                 ConfigData = new byte[0];
