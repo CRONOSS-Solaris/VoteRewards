@@ -97,14 +97,20 @@ namespace VoteRewards
 
         public void UpdatePlayerData(ulong steamId, string nickName, TimeSpan totalTimeSpent)
         {
-            // Aktualizacja danych gracza lub dodanie nowego, jeśli nie istnieje
             var playerInfo = _playerData.GetOrAdd(steamId, (DateTime.UtcNow, nickName, totalTimeSpent));
             if (playerInfo.JoinTime != DateTime.UtcNow)
             {
-                // Gracz istnieje, aktualizujemy jego dane
-                _playerData[steamId] = (playerInfo.JoinTime, nickName, totalTimeSpent + playerInfo.TotalTimeSpent);
+                var newTotalTime = playerInfo.TotalTimeSpent + totalTimeSpent;
+                // Zapobieganie przekroczeniu maksymalnej wartości TimeSpan
+                if (newTotalTime > TimeSpan.MaxValue)
+                {
+                    Log.Error($"Total time spent exceeds TimeSpan.MaxValue for player {nickName} (SteamID: {steamId}). Adjusting to TimeSpan.MaxValue.");
+                    newTotalTime = TimeSpan.MaxValue;
+                }
+                _playerData[steamId] = (playerInfo.JoinTime, nickName, newTotalTime);
             }
         }
+
 
         public async Task SaveAllPlayerTimesAsync()
         {
