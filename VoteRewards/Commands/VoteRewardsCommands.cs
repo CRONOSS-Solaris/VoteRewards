@@ -62,7 +62,7 @@ namespace VoteRewards
             var steamId = Context.Player.SteamUserId.ToString();
             var identityId = Context.Player.IdentityId;
 
-            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig, Plugin.RefferalCodeReward);
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig, Plugin.RefferalCodeReward, Plugin.TopVotersBenefitConfig);
 
             PlayerRewardTracker rewardTracker = new PlayerRewardTracker(Path.Combine(VoteRewardsMain.Instance.StoragePath, "VoteReward", "PlayerData.xml"));
 
@@ -128,7 +128,7 @@ namespace VoteRewards
             var steamId = Context.Player.SteamUserId;
             var identityId = Context.Player.IdentityId;
 
-            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig, Plugin.RefferalCodeReward);
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig, Plugin.RefferalCodeReward, Plugin.TopVotersBenefitConfig);
 
             int voteStatus;
             try
