@@ -171,21 +171,7 @@ namespace VoteRewards
         {
             NexusManager.SendTopVotersBenefitUpdate(Plugin.TopVotersBenefitConfig);
             Plugin.Save();
-            MessageBox.Show("Vote ranges saved successfully!");
-        }
-
-        private void SaveRewards_Click(object sender, RoutedEventArgs e)
-        {
-
-            if (VoteRangeRewardsDataGrid.SelectedItem == null)
-            {
-                MessageBox.Show("Please select a vote range first.");
-                return;
-            }
-
-            NexusManager.SendTopVotersBenefitUpdate(Plugin.TopVotersBenefitConfig);
-            Plugin.Save();
-            MessageBox.Show("Rewards saved successfully!");
+            MessageBox.Show("Saved successfully!");
         }
     }
 }

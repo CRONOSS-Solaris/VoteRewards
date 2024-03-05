@@ -85,7 +85,6 @@
         <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
             <Button Style="{StaticResource ButtonStyle1}" Content="Add Reward" Width="80" Margin="5" Click="AddRewardButton_Click"/>
             <Button Style="{StaticResource ButtonStyle1}" Content="Remove Selected Reward" Width="150" Margin="5" Click="RemoveRewardButton_Click"/>
-            <Button Style="{StaticResource ButtonStyle1}" Content="Save Rewards" Width="90" Margin="5" Click="SaveRewards_Click"/>
         </StackPanel>
     </Grid>
 </Window>
