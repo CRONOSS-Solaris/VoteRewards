@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using VoteRewards.Nexus;
 using VoteRewards.Utils;
 
 namespace VoteRewards
@@ -30,6 +31,12 @@ namespace VoteRewards
         {
             // Przykład dodawania nowego zakresu głosowania
             var newRange = new VoteRangeReward { MinVotes = 0, MaxVotes = 0 };
+
+            newRange.Rewards = new List<RewardItem>
+            {
+                new RewardItem()
+            };
+
             Plugin.TopVotersBenefitConfig.VoteRangeRewards.Add(newRange);
             VoteRangeRewardsDataGrid.Items.Refresh();
         }
@@ -162,6 +169,7 @@ namespace VoteRewards
 
         private void SaveVoteRanges_Click(object sender, RoutedEventArgs e)
         {
+            NexusManager.SendTopVotersBenefitUpdate(Plugin.TopVotersBenefitConfig);
             Plugin.Save();
             MessageBox.Show("Vote ranges saved successfully!");
         }
@@ -175,6 +183,7 @@ namespace VoteRewards
                 return;
             }
 
+            NexusManager.SendTopVotersBenefitUpdate(Plugin.TopVotersBenefitConfig);
             Plugin.Save();
             MessageBox.Show("Rewards saved successfully!");
         }

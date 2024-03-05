@@ -1,5 +1,6 @@
 ﻿using ProtoBuf;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace VoteRewards.Config
 {
@@ -7,11 +8,11 @@ namespace VoteRewards.Config
     public class TopVotersBenefitConfig
     {
         [ProtoMember(1)]
-        public List<VoteRangeReward> VoteRangeRewards { get; set; }
+        public ObservableCollection<VoteRangeReward> VoteRangeRewards { get; set; } = new ObservableCollection<VoteRangeReward>();
 
         public TopVotersBenefitConfig()
         {
-            VoteRangeRewards = new List<VoteRangeReward>();
+            VoteRangeRewards = new ObservableCollection<VoteRangeReward>();
         }
     }
 
