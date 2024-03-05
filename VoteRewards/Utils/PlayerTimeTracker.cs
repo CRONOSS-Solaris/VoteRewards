@@ -16,6 +16,7 @@ namespace VoteRewards
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private readonly ConcurrentDictionary<ulong, (DateTime JoinTime, string NickName, TimeSpan TotalTimeSpent)> _playerData = new ConcurrentDictionary<ulong, (DateTime, string, TimeSpan)>();
+        private readonly object _updateLock = new object();
         private readonly string _dataFilePath;
 
         public PlayerTimeTracker()
@@ -71,45 +72,35 @@ namespace VoteRewards
             LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Player left: {player.Name} (SteamID: {player.SteamId})");
             if (_playerData.TryGetValue(player.SteamId, out var playerInfo))
             {
-                // Obliczenie czasu spędzonego podczas tej sesji
                 var timeSpentThisSession = DateTime.UtcNow - playerInfo.JoinTime;
-
-                // Obliczenie całkowitego czasu spędzonego na serwerze
                 var totalTimeSpent = playerInfo.TotalTimeSpent + timeSpentThisSession;
 
-                // Aktualizacja danych gracza
-                UpdatePlayerData(player.SteamId, player.Name, totalTimeSpent);
+                lock (_updateLock)
+                {
+                    UpdatePlayerData(player.SteamId, player.Name, totalTimeSpent);
+                }
 
-                // Logowanie czasu spędzonego podczas tej sesji
                 LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Player {player.Name} (SteamID: {player.SteamId}) spent {timeSpentThisSession.TotalMinutes} minutes on the server this session.");
+                LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Total time spent by {player.Name} (SteamID: {player.SteamId}) on the server: {totalTimeSpent.TotalMinutes} minutes.");
 
-                // Logowanie całkowitego czasu spędzonego na serwerze, wraz z wartościami, które są do siebie dodawane
-                LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Total time spent by {player.Name} (SteamID: {player.SteamId}) on the server: previously {playerInfo.TotalTimeSpent.TotalMinutes} minutes + {timeSpentThisSession.TotalMinutes} minutes this session = {totalTimeSpent.TotalMinutes} minutes.");
-
-                // Asynchroniczne zapisywanie czasu gracza
                 Task.Run(() => SavePlayerTimeAsync(player.SteamId, player.Name, totalTimeSpent));
-
-                // Asynchroniczna synchronizacja danych z innymi serwerami
                 Task.Run(() => NexusManager.SendPlayerTimeDataToAllServers(player.SteamId, player.Name, totalTimeSpent));
             }
         }
 
-
         public void UpdatePlayerData(ulong steamId, string nickName, TimeSpan totalTimeSpent)
         {
-            var playerInfo = _playerData.GetOrAdd(steamId, (DateTime.UtcNow, nickName, totalTimeSpent));
-            if (playerInfo.JoinTime != DateTime.UtcNow)
-            {
-                var newTotalTime = playerInfo.TotalTimeSpent + totalTimeSpent;
-                // Zapobieganie przekroczeniu maksymalnej wartości TimeSpan
-                if (newTotalTime > TimeSpan.MaxValue)
-                {
-                    Log.Error($"Total time spent exceeds TimeSpan.MaxValue for player {nickName} (SteamID: {steamId}). Adjusting to TimeSpan.MaxValue.");
-                    newTotalTime = TimeSpan.MaxValue;
-                }
-                _playerData[steamId] = (playerInfo.JoinTime, nickName, newTotalTime);
-            }
+            // Bezpośrednia aktualizacja, zakładając że totalTimeSpent jest już skumulowanym czasem
+            _playerData.AddOrUpdate(steamId,
+                // Jeśli klucz nie istnieje, dodaj nowy wpis
+                (DateTime.UtcNow, nickName, totalTimeSpent),
+                // Jeśli klucz istnieje, zaktualizuj wpis
+                (key, existingValue) => {
+                    var updatedTimeSpent = totalTimeSpent > existingValue.TotalTimeSpent ? totalTimeSpent : existingValue.TotalTimeSpent;
+                    return (DateTime.UtcNow, nickName, updatedTimeSpent);
+                });
         }
+
 
 
         public async Task SaveAllPlayerTimesAsync()

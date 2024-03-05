@@ -1,6 +1,7 @@
 ﻿using Nexus.API;
 using Sandbox.ModAPI;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using VoteRewards.Utils;
 
@@ -8,7 +9,7 @@ namespace VoteRewards.Nexus
 {
     public static partial class NexusManager
     {
-        public static void SendPlayerTimeDataToAllServers(ulong steamId, string nickName, TimeSpan totalTimeSpent)
+        public static async Task SendPlayerTimeDataToAllServers(ulong steamId, string nickName, TimeSpan totalTimeSpent)
         {
             var servers = NexusAPI.GetAllServers();
             if (servers.Count == 0)
@@ -20,11 +21,11 @@ namespace VoteRewards.Nexus
             var playerTimeData = new { SteamId = steamId, NickName = nickName, TotalTimeSpent = totalTimeSpent.TotalMinutes };
             byte[] data = MyAPIGateway.Utilities.SerializeToBinary(playerTimeData);
 
-            foreach (var server in servers)
+            var tasks = servers.Select(server =>
             {
                 if (server.ServerID != ThisServer?.ServerID)
                 {
-                    Task.Run(() =>
+                    return Task.Run(() =>
                     {
                         try
                         {
@@ -39,7 +40,13 @@ namespace VoteRewards.Nexus
                         }
                     });
                 }
-            }
+                else
+                {
+                    return Task.Run(() => LoggerHelper.DebugLog(Log, Config, "Skipped sending data to the source server."));
+                }
+            }).ToList();
+
+            await Task.WhenAll(tasks);
         }
 
         private static void HandlePlayerTimeTrackerMessage(NexusMessage message)
@@ -49,15 +56,25 @@ namespace VoteRewards.Nexus
 
             if (playerTimeTracker != null)
             {
-                var totalTimeSpent = TimeSpan.FromMinutes(receivedData.TotalTimeSpent);
-                playerTimeTracker.UpdatePlayerData(receivedData.SteamId, receivedData.NickName, totalTimeSpent);
+                // Sprawdzanie, czy odebrane dane czasu nie są starsze niż te już zapisane
+                var existingTime = playerTimeTracker.GetTotalTimeSpent(receivedData.SteamId);
+                var receivedTime = TimeSpan.FromMinutes(receivedData.TotalTimeSpent);
+
+                if (receivedTime > existingTime)
+                {
+                    playerTimeTracker.UpdatePlayerData(receivedData.SteamId, receivedData.NickName, receivedTime - existingTime);
+                    LoggerHelper.DebugLog(Log, Config, $"Updated player {receivedData.NickName} (SteamID: {receivedData.SteamId}) time data. New total time: {receivedTime.TotalMinutes} minutes.");
+                }
+                else
+                {
+                    LoggerHelper.DebugLog(Log, Config, $"Received older or equal time data for player {receivedData.NickName} (SteamID: {receivedData.SteamId}), no update performed.");
+                }
             }
             else
             {
                 Log.Error("PlayerTimeTracker instance is not available in HandlePlayerTimeTrackerMessage");
             }
         }
-
 
     }
 }
