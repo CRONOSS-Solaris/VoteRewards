@@ -210,5 +210,18 @@ namespace VoteRewards
             }
             return null;
         }
+
+        public void ProcessAndSaveReceivedPlayerTimeData(ulong steamId, string nickName, TimeSpan totalTimeSpent)
+        {
+            lock (_updateLock)
+            {
+                // Aktualizuj dane gracza lub dodaj nowego gracza
+                UpdatePlayerData(steamId, nickName, totalTimeSpent);
+
+                // Asynchronicznie zapisz aktualizacje
+                Task.Run(() => SavePlayerTimeAsync(steamId, nickName, totalTimeSpent));
+            }
+        }
+
     }
 }

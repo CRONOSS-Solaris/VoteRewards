@@ -56,25 +56,16 @@ namespace VoteRewards.Nexus
 
             if (playerTimeTracker != null)
             {
-                // Sprawdzanie, czy odebrane dane czasu nie są starsze niż te już zapisane
-                var existingTime = playerTimeTracker.GetTotalTimeSpent(receivedData.SteamId);
+                // Bezpośrednie przekazanie otrzymanych danych do przetworzenia i zapisania
                 var receivedTime = TimeSpan.FromMinutes(receivedData.TotalTimeSpent);
+                playerTimeTracker.ProcessAndSaveReceivedPlayerTimeData(receivedData.SteamId, receivedData.NickName, receivedTime);
 
-                if (receivedTime > existingTime)
-                {
-                    playerTimeTracker.UpdatePlayerData(receivedData.SteamId, receivedData.NickName, receivedTime - existingTime);
-                    LoggerHelper.DebugLog(Log, Config, $"Updated player {receivedData.NickName} (SteamID: {receivedData.SteamId}) time data. New total time: {receivedTime.TotalMinutes} minutes.");
-                }
-                else
-                {
-                    LoggerHelper.DebugLog(Log, Config, $"Received older or equal time data for player {receivedData.NickName} (SteamID: {receivedData.SteamId}), no update performed.");
-                }
+                LoggerHelper.DebugLog(Log, Config, $"Processed and saved received player time data for {receivedData.NickName} (SteamID: {receivedData.SteamId}).");
             }
             else
             {
                 Log.Error("PlayerTimeTracker instance is not available in HandlePlayerTimeTrackerMessage");
             }
         }
-
     }
 }
