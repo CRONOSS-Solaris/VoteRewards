@@ -182,7 +182,7 @@ namespace VoteRewards
                             messages.AddRange(successfulRewards.Select(reward => $"{reward}"));
                             messages.Add("Thank you for voting!");
 
-                            //await Plugin.ApiHelper.SetVoteAsClaimedAsync(steamId);
+                            await Plugin.ApiHelper.SetVoteAsClaimedAsync(steamId);
                         }
                         else
                         {
