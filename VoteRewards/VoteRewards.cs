@@ -205,7 +205,7 @@ namespace VoteRewards
         {
             try
             {
-                var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig, this.RefferalCodeReward);
+                var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig, this.RefferalCodeReward, this.TopVotersBenefitConfig);
 
                 foreach (var player in MySession.Static.Players.GetOnlinePlayers())
                 {
