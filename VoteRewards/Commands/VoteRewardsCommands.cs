@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Torch.Commands;
 using Torch.Commands.Permissions;
 using VoteRewards.Nexus;
@@ -67,7 +68,7 @@ namespace VoteRewards
             PlayerRewardTracker rewardTracker = new PlayerRewardTracker(Path.Combine(VoteRewardsMain.Instance.StoragePath, "VoteReward", "PlayerData.xml"));
 
             // Sprawdzanie ostatniej daty odbioru nagrody
-            var lastClaimDate = rewardTracker.GetLastRewardClaimDate(Context.Player.SteamUserId);
+            var lastClaimDate = await rewardTracker.GetLastRewardClaimDate(Context.Player.SteamUserId);
             if (lastClaimDate.HasValue && (DateTime.UtcNow - lastClaimDate.Value).TotalDays < 30)
             {
                 VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "You can only claim the top voter reward once a month. Please try again later.", Color.Green, Context.Player.SteamUserId);
@@ -107,7 +108,12 @@ namespace VoteRewards
                         messages.AddRange(successfulTopRewards.Select(reward => $"{reward}"));
                         // Aktualizacja daty ostatniego odbioru nagrody
                         rewardTracker.UpdateLastRewardClaimDate(Context.Player.SteamUserId, DateTime.UtcNow);
-                        NexusManager.SendPlayerRewardTrackerToAllServers(Context.Player.SteamUserId, DateTime.UtcNow);
+                        
+                        if (!VoteRewardsMain.Instance.Config.UseDatabase)
+                        {
+                            // Tylko wtedy wysyłaj dane przez NexusManager, gdy nie korzystamy z bazy danych
+                            NexusManager.SendPlayerRewardTrackerToAllServers(Context.Player.SteamUserId, DateTime.UtcNow);
+                        }
                     }
                     break;
                 }
@@ -270,9 +276,10 @@ namespace VoteRewards
 
         [Command("topplaytime", "Shows top 5 players with the most time spent on the server.")]
         [Permission(MyPromoteLevel.None)]
-        public void ShowTopPlayersCommand()
+        public async Task ShowTopPlayersCommand()
         {
-            var topPlayers = Plugin.PlayerTimeTracker.GetTopPlayers(5);
+            var topPlayersTask = Plugin.PlayerTimeTracker.GetTopPlayers(5);
+            var topPlayers = await topPlayersTask;
             if (topPlayers.Count == 0)
             {
                 VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", "No player data available.", Color.Red, Context.Player.SteamUserId);
@@ -289,7 +296,7 @@ namespace VoteRewards
             }
 
             VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", response, Color.Green, Context.Player.SteamUserId);
+            return;
         }
-
     }
 }

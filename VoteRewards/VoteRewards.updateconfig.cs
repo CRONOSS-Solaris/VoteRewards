@@ -27,6 +27,7 @@ namespace VoteRewards
             _config.Data.IsEventCodeEnabled = newConfig.IsEventCodeEnabled;
             _config.Data.EventCodePrefix = newConfig.EventCodePrefix;
             _config.Data.ReferralCodeUsageTimeLimit = newConfig.ReferralCodeUsageTimeLimit;
+            _config.Data.UseDatabase = newConfig.UseDatabase;
 
             _config.Save();
 

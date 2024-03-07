@@ -18,6 +18,7 @@ using Torch.API.Session;
 using Torch.Managers;
 using Torch.Session;
 using VoteRewards.Config;
+using VoteRewards.DataBase;
 using VoteRewards.Nexus;
 using VoteRewards.Utils;
 using VRageMath;
@@ -72,6 +73,10 @@ namespace VoteRewards
 
         public VoteApiHelper ApiHelper { get; private set; }
 
+        // PostgresSQL
+        private PostgresDatabaseManager _databaseManager;
+        public PostgresDatabaseManager DatabaseManager => _databaseManager;
+
         // Metody i ich implementacje
         public UserControl GetControl()
         {
@@ -86,18 +91,31 @@ namespace VoteRewards
         {
             base.Init(torch);
             Instance = this;
+
             _config = SetupConfig(CONFIG_FILE_NAME, new VoteRewardsConfig());
             _rewardItemsConfig = SetupConfig(REWARD_ITEMS_CONFIG_FILE_NAME, new RewardItemsConfig());
             _topVotersBenefitConfig = SetupConfig("TopVotersBenefitConfig.cfg", new TopVotersBenefitConfig());
             _timeSpentRewardsConfig = SetupConfig("TimeSpentRewardsConfig.cfg", new TimeSpentRewardsConfig());
             _refferalCodeReward = SetupConfig("ReferralCodeReward.cfg", new RefferalCodeReward());
             _eventCodeReward = SetupConfig("EventCodeReward.cfg", new EventCodeReward());
-            string referralCodeFilePath = Path.Combine(StoragePath, "VoteReward", "ReferralCodes.json");
-            _referralCodeManager = new ReferralCodeManager(referralCodeFilePath, _config.Data);
-            string EventCodeFilePath = Path.Combine(StoragePath, "VoteReward", "EventCodes.json");
-            _eventCodeManager = new EventCodeManager(EventCodeFilePath, _config.Data);
-            ApiHelper = new VoteApiHelper();
 
+            //PostgresSQL
+            if (_config.Data.UseDatabase)
+            {
+                // Ciąg połączenia z ustawień konfiguracji
+                string connectionString = $"Host={_config.Data.DatabaseHost};Port={_config.Data.DatabasePort};Username={_config.Data.DatabaseUsername};Password={_config.Data.DatabasePassword};Database={_config.Data.DatabaseName};";
+                _databaseManager = new PostgresDatabaseManager(connectionString);
+                _databaseManager.InitializeDatabase();
+            }
+
+            // Tworzenie ścieżek plików tylko jeśli baza danych nie jest używana
+            string referralCodeFilePath = _config.Data.UseDatabase ? null : Path.Combine(StoragePath, "VoteReward", "ReferralCodes.json");
+            string eventCodeFilePath = _config.Data.UseDatabase ? null : Path.Combine(StoragePath, "VoteReward", "EventCodes.json");
+
+            // Inicjalizacja menedżerów zależnie od konfiguracji użycia bazy danych
+            _referralCodeManager = new ReferralCodeManager(referralCodeFilePath, _config.Data);
+            _eventCodeManager = new EventCodeManager(eventCodeFilePath, _config.Data);
+            ApiHelper = new VoteApiHelper();
 
             if (Application.Current != null)
             {

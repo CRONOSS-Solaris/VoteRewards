@@ -61,7 +61,10 @@ namespace VoteRewards
                         generatedCodes.Add(lastGeneratedCode);
 
                         // Wywołanie metody wysyłającej kody na inne serwery
-                        NexusManager.SendRefferalCodeCreateToAllServers(newReferralCode);
+                        if (!VoteRewardsMain.Instance.Config.UseDatabase)
+                        {
+                            NexusManager.SendRefferalCodeCreateToAllServers(newReferralCode);
+                        }
                     }
                 }
             }

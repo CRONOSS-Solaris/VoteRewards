@@ -1,0 +1,145 @@
+﻿using Npgsql;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System;
+
+namespace VoteRewards.DataBase
+{
+    public partial class PostgresDatabaseManager
+    {
+        public async Task SavePlayerTimeAsync(long steamId, string nickName, TimeSpan totalTimeSpent)
+        {
+            using (var PlayerDataConnection = new NpgsqlConnection(_connectionString))
+            {
+                await PlayerDataConnection.OpenAsync();
+
+                var checkQuery = "SELECT COUNT(*) FROM VoteRewards_Player_Data WHERE steam_id = @SteamId;";
+                using (var checkCmd = new NpgsqlCommand(checkQuery, PlayerDataConnection))
+                {
+                    checkCmd.Parameters.AddWithValue("@SteamId", steamId);
+                    var exists = (long)await checkCmd.ExecuteScalarAsync() > 0;
+
+                    string commandText;
+                    if (exists)
+                    {
+                        commandText = @"
+                        UPDATE VoteRewards_Player_Data
+                        SET nickname = @NickName, total_time_spent = @TotalTimeSpent
+                        WHERE steam_id = @SteamId;";
+                    }
+                    else
+                    {
+                        commandText = @"
+                        INSERT INTO VoteRewards_Player_Data (steam_id, nickname, total_time_spent)
+                        VALUES (@SteamId, @NickName, @TotalTimeSpent);";
+                    }
+
+                    using (var cmd = new NpgsqlCommand(commandText, PlayerDataConnection))
+                    {
+                        cmd.Parameters.AddWithValue("@SteamId", steamId);
+                        cmd.Parameters.AddWithValue("@NickName", nickName);
+                        cmd.Parameters.AddWithValue("@TotalTimeSpent", (long)totalTimeSpent.TotalMinutes);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+            }
+        }
+
+        public async Task<List<(long SteamId, string NickName, long TotalTimeSpent)>> GetAllPlayerTimesAsync()
+        {
+            var playersData = new List<(long SteamId, string NickName, long TotalTimeSpent)>();
+
+            using (var PlayerDataConnection = new NpgsqlConnection(_connectionString))
+            {
+                await PlayerDataConnection.OpenAsync();
+                var commandText = "SELECT steam_id, nickname, total_time_spent FROM VoteRewards_Player_Data;";
+
+                using (var cmd = new NpgsqlCommand(commandText, PlayerDataConnection))
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        playersData.Add((
+                            SteamId: reader.GetInt64(0),
+                            NickName: reader.GetString(1),
+                            TotalTimeSpent: reader.GetInt64(2)
+                        ));
+                    }
+                }
+            }
+
+            return playersData;
+        }
+
+        public async Task<DateTime?> GetLastRewardClaimDateAsync(long steamId)
+        {
+            using (var PlayerDataConnection = new NpgsqlConnection(_connectionString))
+            {
+                await PlayerDataConnection.OpenAsync();
+                var commandText = "SELECT last_reward_claim_date FROM VoteRewards_Player_Data WHERE steam_id = @SteamId;";
+
+                using (var cmd = new NpgsqlCommand(commandText, PlayerDataConnection))
+                {
+                    cmd.Parameters.AddWithValue("@SteamId", steamId);
+                    var result = await cmd.ExecuteScalarAsync();
+                    if (result != DBNull.Value)
+                    {
+                        return (DateTime?)result;
+                    }
+                    return null;
+                }
+            }
+        }
+
+        public async Task UpdateLastRewardClaimDateAsync(long steamId, DateTime claimDate)
+        {
+            using (var PlayerDataConnection = new NpgsqlConnection(_connectionString))
+            {
+                await PlayerDataConnection.OpenAsync();
+                var commandText = @"
+                UPDATE VoteRewards_Player_Data 
+                SET last_reward_claim_date = @ClaimDate
+                WHERE steam_id = @SteamId;";
+
+                using (var cmd = new NpgsqlCommand(commandText, PlayerDataConnection))
+                {
+                    cmd.Parameters.AddWithValue("@SteamId", steamId);
+                    cmd.Parameters.AddWithValue("@ClaimDate", claimDate);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+        }
+
+        public async Task<List<(string NickName, TimeSpan TotalTimeSpent)>> GetTopPlayersFromDatabase(int count)
+        {
+            var topPlayers = new List<(string NickName, TimeSpan TotalTimeSpent)>();
+
+            using (var PlayerDataConnection = new NpgsqlConnection(_connectionString))
+            {
+                await PlayerDataConnection.OpenAsync();
+                var commandText = @"
+                SELECT nickname, total_time_spent 
+                FROM VoteRewards_Player_Data 
+                ORDER BY total_time_spent DESC 
+                LIMIT @Count;";
+
+                using (var cmd = new NpgsqlCommand(commandText, PlayerDataConnection))
+                {
+                    cmd.Parameters.AddWithValue("@Count", count);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var nickName = reader.GetString(0);
+                            var totalTimeSpent = TimeSpan.FromMinutes(reader.GetInt64(1));
+                            topPlayers.Add((nickName, totalTimeSpent));
+                        }
+                    }
+                }
+            }
+
+            return topPlayers;
+        }
+    }
+}

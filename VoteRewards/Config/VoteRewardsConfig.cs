@@ -11,7 +11,29 @@ namespace VoteRewards
         private string _votingLink;
         private string _notificationPrefix = "Reward";
         private bool _debugMode = false;
-        
+
+        //DataBase Postgresql
+        private bool _useDatabase;
+        private string _databaseHost = "localhost";
+        private int _databasePort = 5432;
+        private string _databaseName = "mydatabase";
+        private string _databaseUsername = "myuser";
+        private string _databasePassword = "mypassword";
+
+        //DataBase Postgresql
+        [ProtoMember(12)]
+        public bool UseDatabase { get => _useDatabase; set => SetValue(ref _useDatabase, value); }
+        [ProtoMember(13)]
+        public string DatabaseHost { get => _databaseHost; set => SetValue(ref _databaseHost, value); }
+        [ProtoMember(14)]
+        public int DatabasePort { get => _databasePort; set => SetValue(ref _databasePort, value); }
+        [ProtoMember(15)]
+        public string DatabaseName { get => _databaseName; set => SetValue(ref _databaseName, value); }
+        [ProtoMember(16)]
+        public string DatabaseUsername { get => _databaseUsername; set => SetValue(ref _databaseUsername, value); }
+        [ProtoMember(17)]
+        public string DatabasePassword { get => _databasePassword; set => SetValue(ref _databasePassword, value); }
+
         //Referral Code
         private bool _isReferralCodeEnabled = false;
         private int _maxReferralCodes = 10;
@@ -30,16 +52,10 @@ namespace VoteRewards
         //VoteReward
         [ProtoMember(1)]
         public bool DebugMode
-        {
-            get => _debugMode;
-            set => SetValue(ref _debugMode, value);
-        }
+        { get => _debugMode;  set => SetValue(ref _debugMode, value); }
         [ProtoMember(2)]
         public string ServerApiKey
-        {
-            get => _serverApiKey;
-            set => SetValue(ref _serverApiKey, value);
-        }
+        { get => _serverApiKey; set => SetValue(ref _serverApiKey, value); }
 
         [ProtoMember(3)]
         public string VotingLink
