@@ -114,7 +114,8 @@ namespace VoteRewards
         {
             try
             {
-                var doc = File.Exists(_dataFilePath) ? XDocument.Load(_dataFilePath) : new XDocument(new XElement("Players"));
+                PlayerDataStorage storage = PlayerDataStorage.GetInstance(_dataFilePath);
+                var doc = storage.LoadPlayerData();
                 var existingPlayer = doc.Root.Elements("Player").FirstOrDefault(x => x.Attribute("SteamID").Value == steamId.ToString());
                 var totalMinutes = (long)totalTimeSpent.TotalMinutes;
 
@@ -130,7 +131,7 @@ namespace VoteRewards
                         new XElement("TotalTimeSpent", totalMinutes)));
                 }
 
-                await Task.Run(() => doc.Save(_dataFilePath));
+                await Task.Run(() => storage.SavePlayerData(doc));
                 LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Saved player time data for {nickName} (SteamID: {steamId}).");
             }
             catch (Exception ex)
@@ -143,18 +144,16 @@ namespace VoteRewards
         {
             try
             {
-                if (File.Exists(_dataFilePath))
+                PlayerDataStorage storage = PlayerDataStorage.GetInstance(_dataFilePath);
+                var doc = storage.LoadPlayerData();
+                foreach (var playerElement in doc.Root.Elements("Player"))
                 {
-                    var doc = XDocument.Load(_dataFilePath);
-                    foreach (var playerElement in doc.Root.Elements("Player"))
-                    {
-                        var steamId = ulong.Parse(playerElement.Attribute("SteamID").Value);
-                        var nickName = playerElement.Element("NickName").Value;
-                        var minutes = double.Parse(playerElement.Element("TotalTimeSpent").Value);
-                        _playerData[steamId] = (DateTime.MinValue, nickName, TimeSpan.FromMinutes(minutes));
-                    }
-                    LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, "Loaded player times from XML file.");
+                    var steamId = ulong.Parse(playerElement.Attribute("SteamID").Value);
+                    var nickName = playerElement.Element("NickName").Value;
+                    var minutes = double.Parse(playerElement.Element("TotalTimeSpent").Value);
+                    _playerData[steamId] = (DateTime.MinValue, nickName, TimeSpan.FromMinutes(minutes));
                 }
+                LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, "Loaded player times from XML file.");
             }
             catch (Exception ex)
             {

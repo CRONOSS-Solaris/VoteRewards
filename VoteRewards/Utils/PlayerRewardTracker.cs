@@ -20,14 +20,12 @@ namespace VoteRewards.Utils
 
         private void LoadOrCreateDocument()
         {
-            if (File.Exists(_dataFilePath))
+            PlayerDataStorage storage = PlayerDataStorage.GetInstance(_dataFilePath);
+            _doc = storage.LoadPlayerData();
+            if (_doc.Root == null)
             {
-                _doc = XDocument.Load(_dataFilePath);
-            }
-            else
-            {
-                _doc = new XDocument(new XElement("Players"));
-                _doc.Save(_dataFilePath);
+                _doc.Add(new XElement("Players"));
+                storage.SavePlayerData(_doc);
             }
         }
 
@@ -43,18 +41,11 @@ namespace VoteRewards.Utils
 
         public void UpdateLastRewardClaimDate(ulong steamId, DateTime claimDate)
         {
+            PlayerDataStorage storage = PlayerDataStorage.GetInstance(_dataFilePath);
             var playerElement = _doc.Root.Elements("Player").FirstOrDefault(x => ulong.Parse(x.Attribute("SteamID").Value) == steamId);
             if (playerElement != null)
             {
-                var lastClaimDateElement = playerElement.Element("LastRewardClaimDate");
-                if (lastClaimDateElement != null)
-                {
-                    lastClaimDateElement.SetValue(claimDate);
-                }
-                else
-                {
-                    playerElement.Add(new XElement("LastRewardClaimDate", claimDate));
-                }
+                playerElement.SetElementValue("LastRewardClaimDate", claimDate);
             }
             else
             {
@@ -62,7 +53,7 @@ namespace VoteRewards.Utils
                     new XAttribute("SteamID", steamId),
                     new XElement("LastRewardClaimDate", claimDate)));
             }
-            _doc.Save(_dataFilePath);
+            storage.SavePlayerData(_doc);
         }
 
         public static void HandleReceivedPlayerRewardTrackerData(ulong steamId, DateTime claimDate)
