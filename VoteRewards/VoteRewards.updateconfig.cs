@@ -28,6 +28,11 @@ namespace VoteRewards
             _config.Data.EventCodePrefix = newConfig.EventCodePrefix;
             _config.Data.ReferralCodeUsageTimeLimit = newConfig.ReferralCodeUsageTimeLimit;
             _config.Data.UseDatabase = newConfig.UseDatabase;
+            _config.Data.DatabaseHost = newConfig.DatabaseHost;
+            _config.Data.DatabasePort = newConfig.DatabasePort;
+            _config.Data.DatabasePassword = newConfig.DatabasePassword;
+            _config.Data.DatabaseName = newConfig.DatabaseName;
+            _config.Data.DatabaseUsername = newConfig.DatabaseUsername;
 
             _config.Save();
 
