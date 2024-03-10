@@ -34,6 +34,10 @@ namespace VoteRewards
         [ProtoMember(17)]
         public string DatabasePassword { get => _databasePassword; set => SetValue(ref _databasePassword, value); }
 
+        //PlayerTimeTracker
+        private bool _playerTimeTracker;
+        [ProtoMember(18)]
+        public bool PlayerTimeTracker { get => _playerTimeTracker; set => SetValue(ref _playerTimeTracker, value); }
         //Referral Code
         private bool _isReferralCodeEnabled = false;
         private int _maxReferralCodes = 10;

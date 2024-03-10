@@ -278,6 +278,12 @@ namespace VoteRewards
         [Permission(MyPromoteLevel.None)]
         public async Task ShowTopPlayersCommand()
         {
+
+            if (!Plugin.Config.PlayerTimeTracker)
+            {
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "Player Time Tracker function is disabled", Color.Red, Context.Player.SteamUserId);
+                return;
+            }
             var topPlayersTask = Plugin.PlayerTimeTracker.GetTopPlayers(5);
             var topPlayers = await topPlayersTask;
             if (topPlayers.Count == 0)

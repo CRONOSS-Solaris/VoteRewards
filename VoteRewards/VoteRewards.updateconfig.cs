@@ -33,6 +33,7 @@ namespace VoteRewards
             _config.Data.DatabasePassword = newConfig.DatabasePassword;
             _config.Data.DatabaseName = newConfig.DatabaseName;
             _config.Data.DatabaseUsername = newConfig.DatabaseUsername;
+            _config.Data.PlayerTimeTracker = newConfig.PlayerTimeTracker;
 
             _config.Save();
 

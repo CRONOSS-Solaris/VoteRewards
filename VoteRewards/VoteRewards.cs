@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Xml.Linq;
 using Torch;
 using Torch.API;
 using Torch.API.Managers;
@@ -98,6 +99,12 @@ namespace VoteRewards
             _timeSpentRewardsConfig = SetupConfig("TimeSpentRewardsConfig.cfg", new TimeSpentRewardsConfig());
             _refferalCodeReward = SetupConfig("ReferralCodeReward.cfg", new RefferalCodeReward());
             _eventCodeReward = SetupConfig("EventCodeReward.cfg", new EventCodeReward());
+
+            // Tworzenie katalogu i pliku "PlayerData.xml", jeśli nie istnieje
+            if (!_config.Data.UseDatabase)
+            {
+                InitializePlayerDataStorage();
+            }
 
             //PostgresSQL
             if (_config.Data.UseDatabase)
@@ -188,7 +195,11 @@ namespace VoteRewards
                     ConnectNexus();
 
                     _updatePlayerTimeSpentTimer = new Timer(UpdatePlayerTimeSpent, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
-                    PlayerTimeTracker = new PlayerTimeTracker();
+
+                    if (_config.Data.PlayerTimeTracker)
+                    {
+                        PlayerTimeTracker = new PlayerTimeTracker();
+                    }
 
                     _multiplayerManager = session.Managers.GetManager<IMultiplayerManagerBase>();
                     if (_multiplayerManager == null)
@@ -200,8 +211,12 @@ namespace VoteRewards
                         LoggerHelper.DebugLog(Log, _config.Data, "Multiplayer manager initialized.");
                         _multiplayerManager.PlayerJoined += OnPlayerJoined;
                         _multiplayerManager.PlayerLeft += OnPlayerLeft;
-                        _multiplayerManager.PlayerJoined += PlayerTimeTracker.OnPlayerJoined;
-                        _multiplayerManager.PlayerLeft += PlayerTimeTracker.OnPlayerLeft;
+
+                        if (_config.Data.PlayerTimeTracker)
+                        {
+                            _multiplayerManager.PlayerJoined += PlayerTimeTracker.OnPlayerJoined;
+                            _multiplayerManager.PlayerLeft += PlayerTimeTracker.OnPlayerLeft;
+                        }
                     }
 
                     ItemLoader.LoadAvailableItemTypesAndSubtypes(AvailableItemTypes, AvailableItemSubtypes, Log, Config);
@@ -353,6 +368,28 @@ namespace VoteRewards
             else
             {
                 Log.Warn("Nexus API is not installed or not initialized. Skipping Nexus connection.");
+            }
+        }
+
+        private void InitializePlayerDataStorage()
+        {
+            string playerDataDirectory = Path.Combine(StoragePath, "VoteReward");
+            string playerDataFilePath = Path.Combine(playerDataDirectory, "PlayerData.xml");
+
+            if (!Directory.Exists(playerDataDirectory))
+            {
+                Directory.CreateDirectory(playerDataDirectory);
+            }
+
+            if (!File.Exists(playerDataFilePath))
+            {
+                XDocument doc = new XDocument(new XElement("Players"));
+                doc.Save(playerDataFilePath);
+                Log.Info("PlayerData.xml has been created.");
+            }
+            else
+            {
+                Log.Info("PlayerData.xml already exists.");
             }
         }
 
