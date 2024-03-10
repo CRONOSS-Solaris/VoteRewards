@@ -13,33 +13,39 @@ namespace VoteRewards.DataBase
         public async Task<List<ReferralCode>> LoadReferralCodesAsync()
         {
             var referralCodes = new List<ReferralCode>();
-
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                await connection.OpenAsync();
-                using (var cmd = new NpgsqlCommand("SELECT steam_id, nickname, codes, redeemed_by_steam_ids, code_usage_count FROM VoteRewards_Referral_Code", connection))
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    using (var reader = await cmd.ExecuteReaderAsync())
+                    await connection.OpenAsync();
+                    using (var cmd = new NpgsqlCommand("SELECT steam_id, nickname, codes, redeemed_by_steam_ids, code_usage_count FROM VoteRewards_Referral_Code", connection))
                     {
-                        while (await reader.ReadAsync())
+                        using (var reader = await cmd.ExecuteReaderAsync())
                         {
-                            var steamId = (long)reader.GetInt64(0);
-                            var nickname = reader.GetString(1);
-                            var codes = ((string[])reader["codes"]).ToList();
-                            var redeemedBySteamIds = ((long[])reader["redeemed_by_steam_ids"]).Select(id => (long)id).ToHashSet();
-                            var codeUsageCount = reader.GetInt32(4);
-
-                            referralCodes.Add(new ReferralCode
+                            while (await reader.ReadAsync())
                             {
-                                SteamId = (ulong)steamId,
-                                PlayerName = nickname,
-                                Codes = codes,
-                                RedeemedBySteamIds = redeemedBySteamIds.Select(id => (ulong)id).ToList(),
-                                CodeUsageCount = codeUsageCount
-                            });
+                                var steamId = (long)reader.GetInt64(0);
+                                var nickname = reader.GetString(1);
+                                var codes = ((string[])reader["codes"]).ToList();
+                                var redeemedBySteamIds = ((long[])reader["redeemed_by_steam_ids"]).Select(id => (long)id).ToHashSet();
+                                var codeUsageCount = reader.GetInt32(4);
+
+                                referralCodes.Add(new ReferralCode
+                                {
+                                    SteamId = (ulong)steamId,
+                                    PlayerName = nickname,
+                                    Codes = codes,
+                                    RedeemedBySteamIds = redeemedBySteamIds.Select(id => (ulong)id).ToList(),
+                                    CodeUsageCount = codeUsageCount
+                                });
+                            }
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error occurred while loading referral codes: {ex.Message}\n{ex.StackTrace}");
             }
 
             return referralCodes;
@@ -47,42 +53,47 @@ namespace VoteRewards.DataBase
 
         public async Task SaveReferralCodesAsync(List<ReferralCode> referralCodes)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                await connection.OpenAsync();
-
-                foreach (var code in referralCodes)
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    var commandText = @"
-                    INSERT INTO VoteRewards_Referral_Code (steam_id, nickname, codes, redeemed_by_steam_ids, code_usage_count) 
-                    VALUES (@SteamId, @Nickname, @Codes, @RedeemedBySteamIds, @CodeUsageCount)
-                    ON CONFLICT (steam_id) DO UPDATE 
-                    SET nickname = EXCLUDED.nickname, codes = EXCLUDED.codes, redeemed_by_steam_ids = EXCLUDED.redeemed_by_steam_ids, code_usage_count = EXCLUDED.code_usage_count";
+                    await connection.OpenAsync();
 
-                    using (var cmd = new NpgsqlCommand(commandText, connection))
+                    foreach (var code in referralCodes)
                     {
-                        // Konwersja ulong na long
-                        cmd.Parameters.AddWithValue("@SteamId", (long)code.SteamId);
-                        cmd.Parameters.AddWithValue("@Nickname", code.PlayerName);
-                        cmd.Parameters.AddWithValue("@Codes", code.Codes.ToArray());
-                        cmd.Parameters.AddWithValue("@RedeemedBySteamIds", code.RedeemedBySteamIds.Select(id => (long)id).ToArray());
-                        cmd.Parameters.AddWithValue("@CodeUsageCount", code.CodeUsageCount);
+                        var commandText = @"
+                        INSERT INTO VoteRewards_Referral_Code (steam_id, nickname, codes, redeemed_by_steam_ids, code_usage_count) 
+                        VALUES (@SteamId, @Nickname, @Codes, @RedeemedBySteamIds, @CodeUsageCount)
+                        ON CONFLICT (steam_id) DO UPDATE 
+                        SET nickname = EXCLUDED.nickname, codes = EXCLUDED.codes, redeemed_by_steam_ids = EXCLUDED.redeemed_by_steam_ids, code_usage_count = EXCLUDED.code_usage_count";
 
-                        await cmd.ExecuteNonQueryAsync();
+                        using (var cmd = new NpgsqlCommand(commandText, connection))
+                        {
+                            // Konwersja ulong na long
+                            cmd.Parameters.AddWithValue("@SteamId", (long)code.SteamId);
+                            cmd.Parameters.AddWithValue("@Nickname", code.PlayerName);
+                            cmd.Parameters.AddWithValue("@Codes", code.Codes.ToArray());
+                            cmd.Parameters.AddWithValue("@RedeemedBySteamIds", code.RedeemedBySteamIds.Select(id => (long)id).ToArray());
+                            cmd.Parameters.AddWithValue("@CodeUsageCount", code.CodeUsageCount);
+
+                            await cmd.ExecuteNonQueryAsync();
+                        }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                Log.Error($"Error occurred while saving referral codes: {ex.Message}\n{ex.StackTrace}");
+            }
         }
-
 
         public async Task<RedeemCodeResult> RedeemCodeInDatabaseAsync(string code, long redeemerSteamId)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            try
             {
-                await connection.OpenAsync();
-
-                try
+                using (var connection = new NpgsqlConnection(_connectionString))
                 {
+                    await connection.OpenAsync();
                     // Sprawdź, czy kod istnieje i nie został wykorzystany przez tego samego gracza
                     var cmdCheckCode = new NpgsqlCommand(@"SELECT steam_id, codes, redeemed_by_steam_ids FROM VoteRewards_Referral_Code WHERE codes @> ARRAY[@Code]::TEXT[] LIMIT 1", connection);
                     cmdCheckCode.Parameters.AddWithValue("@Code", code);
@@ -124,11 +135,11 @@ namespace VoteRewards.DataBase
 
                     return result;
                 }
-                catch (Exception ex)
-                {
-                    Log.Error($"An error occurred while redeeming a referral code: {ex.Message}");
-                    return RedeemCodeResult.CodeNotFound;
-                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"An error occurred while redeeming a referral code: {ex.Message}\n{ex.StackTrace}");
+                return RedeemCodeResult.CodeNotFound;
             }
         }
     }
