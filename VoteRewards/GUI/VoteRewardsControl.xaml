@@ -119,8 +119,9 @@
                     <TextBlock Grid.Column="0" Grid.Row ="3" VerticalAlignment="Center" Text="Notification Prefix" Margin="5"/>
                     <TextBox Style="{DynamicResource TextBoxStyle1}" Name="NotificationPrefixTextBox" Grid.Column="1" Grid.Row="3" Margin="5,5,5,5" Height="25" Text="{Binding NotificationPrefix}"/>
 
-                    <CheckBox Grid.Row="0" Grid.Column="1" Content="Debug Mode" IsChecked="{Binding DebugMode}" Margin="5,5,270,5" FontWeight="Normal"/>
-                    <CheckBox Grid.Row="0" Grid.Column="1" Content="Player Time Tracker" IsChecked="{Binding PlayerTimeTracker}" Margin="104,5,138,5" FontWeight="Normal"/>
+                    <TextBlock Grid.Row ="4" Grid.Column="4" VerticalAlignment="Center" Text="Enable/Disable Option:" FontWeight="Bold" Margin="5"/>
+                    <CheckBox Grid.Row="5" Grid.Column="3" Content="Debug Mode" IsChecked="{Binding DebugMode}" FontWeight="Normal" Margin="5"/>
+                    <CheckBox Grid.Row="6" Grid.Column="3" Content="Player Time Tracker" IsChecked="{Binding PlayerTimeTracker}" FontWeight="Normal" Margin="5"/>
 
                     <TextBlock Grid.Column="0" Grid.Row ="4" VerticalAlignment="Center" Text="PostgreSQL Database (Optional)" FontWeight="Bold" Grid.ColumnSpan="2" Margin="5"/>
 
