@@ -1,4 +1,5 @@
-﻿using Torch;
+﻿using System.Collections.Generic;
+using Torch;
 using Torch.API.Plugins;
 using VoteRewards.Config;
 using VoteRewards.Nexus;
@@ -52,11 +53,7 @@ namespace VoteRewards
                 return;
             }
 
-            // Aktualizacja wartości konfiguracji
-            _timeSpentRewardsConfig.Data.RewardInterval = newConfig.RewardInterval;
-            _timeSpentRewardsConfig.Data.RewardsList = newConfig.RewardsList;
-            _timeSpentRewardsConfig.Data.NotificationPrefixx = newConfig.NotificationPrefixx;
-
+            _timeSpentRewardsConfig.Data.TimeRewards = newConfig.TimeRewards;
 
             _timeSpentRewardsConfig.Save();
         }

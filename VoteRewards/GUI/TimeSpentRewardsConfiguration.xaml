@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-        xmlns:local="clr-namespace:VoteRewards"
+        xmlns:local="clr-namespace:VoteRewards" xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d" 
         d:DesignHeight="450" d:DesignWidth="800">
 
@@ -63,37 +63,55 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid>
+
+    <Grid Margin="10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="3*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="346*"/>
+            <RowDefinition Height="37*"/>
         </Grid.RowDefinitions>
 
-        <!-- Tytuł -->
-        <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Text="Time Spent Rewards Configuration" FontWeight="Bold" FontSize="16" Margin="5"/>
-
-        <!-- Sekcja konfiguracji interwału nagród -->
-        <StackPanel Grid.Column="0" Grid.Row="1" Orientation="Horizontal" Margin="3">
-            <TextBlock Text="Reward Interval (minutes):" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <TextBox Style="{DynamicResource TextBoxStyle1}" x:Name="RewardIntervalTextBox" Width="100" Text="{Binding Path=Plugin.TimeSpentRewardsConfig.RewardInterval, RelativeSource={RelativeSource AncestorType=Window}}" />
-        </StackPanel>
-
-        <!-- Sekcja konfiguracji prefiksu powiadomień -->
-        <StackPanel Grid.Column="0" Grid.Row="1" Orientation="Horizontal" Margin="3">
-            <TextBlock Text="Notification Prefix:" VerticalAlignment="Center" Margin="260,0,10,0"/>
-            <TextBox Style="{DynamicResource TextBoxStyle1}" x:Name="NotificationPrefixTextBox" Width="150" Text="{Binding Path=Plugin.TimeSpentRewardsConfig.NotificationPrefixx, RelativeSource={RelativeSource AncestorType=Window}}" />
-        </StackPanel>
-
-        <!-- Tabela z nagrodami -->
-        <DataGrid x:Name="TimeSpentRewardsDataGrid" Grid.Column="0" Grid.Row="2" CanUserAddRows="False" AutoGenerateColumns="False" Margin="5" >
+        <!-- Time Spent Rewards -->
+        <TextBlock Text="Time Spent Rewards" FontWeight="Bold" FontSize="16" Margin="5,5,5,5"/>
+        <DataGrid x:Name="TimeSpentRewardsDataGrid" Grid.Row="1" CanUserAddRows="False" AutoGenerateColumns="False" Margin="5,5,5,10" SelectionChanged="TimeSpentRewardsDataGrid_SelectionChanged">
             <DataGrid.Columns>
-                <DataGridTemplateColumn Header="Item Type ID">
+                <DataGridTextColumn Header="Prefix" Binding="{Binding NotificationPrefix}" Width="*" />
+                <DataGridTextColumn Header="Time (Minutes)" Binding="{Binding RewardInterval}" Width="*" />
+                <!-- Zaktualizowana kolumna Is Nexus Synced do używania ComboBox -->
+                <DataGridTemplateColumn Header="Is Nexus Synced" Width="*" >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding IsNexusSynced}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <ComboBox SelectedItem="{Binding IsNexusSynced, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch">
+                                <sys:Boolean>true</sys:Boolean>
+                                <sys:Boolean>false</sys:Boolean>
+                            </ComboBox>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Buttons for VoteRange -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Width="120" Height="33" VerticalAlignment="Center">
+            <Button Style="{StaticResource ButtonStyle1}" Content="+" Width="20" Margin="5" Click="AddVoteRangeButton_Click"/>
+            <Button Style="{StaticResource ButtonStyle1}" Content="-" Width="20" Margin="5" Click="RemoveVoteRangeButton_Click"/>
+            <Button Style="{StaticResource ButtonStyle1}" Content="Save" Width="50" Margin="5" Click="SaveVoteRanges_Click"/>
+        </StackPanel>
+
+        <!-- Reward Items for Selected Vote Range -->
+        <TextBlock Grid.Column="1" Text="Reward Items for Selected" FontWeight="Bold" FontSize="16" Margin="5,5,5,5"/>
+        <DataGrid x:Name="RewardItemsDataGrid" Grid.Column="1" Grid.Row="1" CanUserAddRows="False" AutoGenerateColumns="False" Margin="5,5,5,10">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Item Type ID" Width="*" >
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding ItemTypeId}"/>
@@ -109,7 +127,7 @@
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Item Subtype ID">
+                <DataGridTemplateColumn Header="Item Subtype ID" Width="*" >
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding ItemSubtypeId}"/>
@@ -122,17 +140,16 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Amount One (from)" Binding="{Binding AmountOne}" IsReadOnly="False" />
-                <DataGridTextColumn Header="Amount Two (to)" Binding="{Binding AmountTwo}" IsReadOnly="False" />
-                <DataGridTextColumn Header="Chance to Drop (%)" Binding="{Binding ChanceToDrop}" IsReadOnly="False" />
+                <DataGridTextColumn Header="Amount One (from)" Binding="{Binding AmountOne}" IsReadOnly="False" Width="*" />
+                <DataGridTextColumn Header="Amount Two (to)" Binding="{Binding AmountTwo}" IsReadOnly="False" Width="*" />
+                <DataGridTextColumn Header="Chance to Drop (%)" Binding="{Binding ChanceToDrop}" IsReadOnly="False" Width="*" />
             </DataGrid.Columns>
         </DataGrid>
 
-        <!-- Sekcja przycisków -->
-        <StackPanel Grid.Column="0" Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
-            <Button Style="{StaticResource ButtonStyle1}" x:Name="AddTimeSpentRewardButton" Content="Add Item" Margin="5" Width="100" Click="AddTimeSpentRewardButton_OnClick" />
-            <Button Style="{StaticResource ButtonStyle1}" x:Name="DeleteTimeSpentRewardButton" Content="Delete Item" Margin="5" Width="100" Click="DeleteTimeSpentRewardButton_OnClick" />
-            <Button Style="{StaticResource ButtonStyle1}" Content="Save and Close" Margin="5" Width="100" Click="SaveButton_OnClick"/>
+        <!-- Buttons for Rewards -->
+        <StackPanel Grid.Column="1" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Width="250" Margin="0,2,0,0" Height="33" VerticalAlignment="Top">
+            <Button Style="{StaticResource ButtonStyle1}" Content="Add Reward" Width="80" Margin="5" Click="AddRewardButton_Click"/>
+            <Button Style="{StaticResource ButtonStyle1}" Content="Remove Selected Reward" Width="150" Margin="5" Click="RemoveRewardButton_Click"/>
         </StackPanel>
     </Grid>
 </Window>

@@ -55,7 +55,7 @@ namespace VoteRewards
         private Persistent<RefferalCodeReward> _refferalCodeReward;
         private Persistent<EventCodeReward> _eventCodeReward;
         private IMultiplayerManagerBase _multiplayerManager;
-        private Dictionary<ulong, TimeSpan> _playerTimeSpent = new Dictionary<ulong, TimeSpan>();
+        private Dictionary<ulong, Dictionary<TimeReward, TimeSpan>> _playerTimeSpent = new Dictionary<ulong, Dictionary<TimeReward, TimeSpan>>();
         private Timer _updatePlayerTimeSpentTimer;
         public PlayerTimeTracker PlayerTimeTracker { get; private set; }
 
@@ -155,30 +155,9 @@ namespace VoteRewards
 
         private void OnPlayerJoined(IPlayer player)
         {
-            _playerTimeSpent[player.SteamId] = TimeSpan.Zero;
-
-            //ulong targetSteamId = 76561198209740952;
-
-            //// Sprawdź, czy dołączający gracz ma ten identyfikator Steam
-            //if (player.SteamId == targetSteamId)
-            //{
-            //    // Uruchomienie zadania asynchronicznego z opóźnieniem
-            //    Task.Run(async () =>
-            //    {
-            //        // Opóźnienie 10 minut (600000 milisekund)
-            //        await Task.Delay(600000);
-
-            //        // Użyj prefixu z konfiguracji pluginu
-            //        string funnyMessagePrefix = "Rebelski Dowódca";
-
-            //        // Treść wiadomości
-            //        string funnyMessage = "Ostrzeżenie! Wykryliśmy, że Twoje rebelianckie umiejętności w grach osiągnęły maksymalny poziom. Inni gracze mogą protestować! Zalecamy przejście na tryb 'ukryty rebeliant', aby uniknąć zbytniej popularności. Psst... nie zapomnij o kamuflażu – użyj kostiumu kurczaka!";
-
-            //        // Wysyłanie wiadomości do gracza z prefixem
-            //        ChatManager.SendMessageAsOther($"{funnyMessagePrefix}", funnyMessage, Color.Yellow, targetSteamId);
-            //    });
-            //}
+            _playerTimeSpent[player.SteamId] = new Dictionary<TimeReward, TimeSpan>();
         }
+
 
         private void OnPlayerLeft(IPlayer player)
         {
@@ -245,38 +224,46 @@ namespace VoteRewards
                     var steamId = player.Id.SteamId;
                     if (!_playerTimeSpent.ContainsKey(steamId))
                     {
-                        _playerTimeSpent[steamId] = TimeSpan.Zero;
+                        _playerTimeSpent[steamId] = new Dictionary<TimeReward, TimeSpan>();
                     }
 
-                    _playerTimeSpent[steamId] += TimeSpan.FromMinutes(1);
-
-                    if (_playerTimeSpent[steamId].TotalMinutes >= this.TimeSpentRewardsConfig.RewardInterval)
+                    foreach (var timeReward in this.TimeSpentRewardsConfig.TimeRewards)
                     {
-                        List<RewardItem> rewards = getRandomRewardsUtils.GetRandomTimeSpentReward();
-                        rewards.RemoveAll(item => item == null);
-
-                        if (rewards.Any())
+                        if (!_playerTimeSpent[steamId].ContainsKey(timeReward))
                         {
-                            var successfulRewards = new List<string>();
+                            _playerTimeSpent[steamId][timeReward] = TimeSpan.Zero;
+                        }
 
-                            foreach (var rewardItem in rewards)
+                        _playerTimeSpent[steamId][timeReward] += TimeSpan.FromMinutes(1);
+
+                        if (_playerTimeSpent[steamId][timeReward].TotalMinutes >= timeReward.RewardInterval)
+                        {
+                            var rewardsToAward = timeReward.RewardsList;
+
+                            if (rewardsToAward.Any())
                             {
-                                int randomAmount = getRandomRewardsUtils.GetRandomAmount(rewardItem.AmountOne, rewardItem.AmountTwo);
-                                bool awarded = PlayerRewardManager.AwardPlayer(steamId, rewardItem, randomAmount, Log, Config);
+                                var successfulRewards = new List<string>();
 
-                                if (awarded)
+                                foreach (var rewardItem in rewardsToAward)
                                 {
-                                    successfulRewards.Add($"{randomAmount}x {rewardItem.ItemSubtypeId}");
+                                    int randomAmount = getRandomRewardsUtils.GetRandomAmount(rewardItem.AmountOne, rewardItem.AmountTwo);
+                                    bool awarded = PlayerRewardManager.AwardPlayer(steamId, rewardItem, randomAmount, Log, Config);
+
+                                    if (awarded)
+                                    {
+                                        successfulRewards.Add($"{randomAmount}x {rewardItem.ItemSubtypeId}");
+                                    }
+                                }
+
+                                if (successfulRewards.Any())
+                                {
+                                    ChatManager.SendMessageAsOther(timeReward.NotificationPrefix, $"Congratulations! You have received:\n{string.Join("\n", successfulRewards)}", Color.Green, steamId);
                                 }
                             }
 
-                            if (successfulRewards.Any())
-                            {
-                                ChatManager.SendMessageAsOther(this.TimeSpentRewardsConfig.NotificationPrefixx, $"Congratulations! You have received:\n{string.Join("\n", successfulRewards)}", Color.Green, steamId);
-                            }
+                            // Resetowanie czasu dla tej konkretnej nagrody
+                            _playerTimeSpent[steamId][timeReward] = TimeSpan.Zero;
                         }
-
-                        _playerTimeSpent[steamId] = TimeSpan.Zero;
                     }
                 }
             }
