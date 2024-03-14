@@ -238,7 +238,8 @@ namespace VoteRewards
 
                         if (_playerTimeSpent[steamId][timeReward].TotalMinutes >= timeReward.RewardInterval)
                         {
-                            var rewardsToAward = timeReward.RewardsList;
+
+                            var rewardsToAward = getRandomRewardsUtils.GetRandomRewardsFromList(timeReward.RewardsList);
 
                             if (rewardsToAward.Any())
                             {

@@ -51,21 +51,6 @@ namespace VoteRewards.Utils
             return rewardItems;
         }
 
-        // Metoda do pobrania losowych nagród za spędzony czas
-        public List<RewardItem> GetRandomTimeSpentReward()
-        {
-            List<RewardItem> allRewards = new List<RewardItem>();
-
-            // Iteracja przez wszystkie TimeReward w TimeSpentRewardsConfig
-            foreach (var timeReward in _timeSpentRewardsConfig.TimeRewards)
-            {
-                allRewards.AddRange(GetRandomRewardsFromList(timeReward.RewardsList));
-            }
-
-            return allRewards;
-        }
-
-
         // Method to get random rewards based on the RewardItemsConfig
         public List<RewardItem> GetRandomRewards()
         {
