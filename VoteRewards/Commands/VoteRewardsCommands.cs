@@ -276,16 +276,14 @@ namespace VoteRewards
 
         [Command("topplaytime", "Shows top 5 players with the most time spent on the server.")]
         [Permission(MyPromoteLevel.None)]
-        public async Task ShowTopPlayersCommand()
+        public void ShowTopPlayersCommand()
         {
-
             if (!Plugin.Config.PlayerTimeTracker)
             {
                 VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "Player Time Tracker function is disabled", Color.Red, Context.Player.SteamUserId);
                 return;
             }
-            var topPlayersTask = Plugin.PlayerTimeTracker.GetTopPlayers(5);
-            var topPlayers = await topPlayersTask;
+            var topPlayers = Plugin.PlayerTimeTracker.GetTopPlayers(5);
             if (topPlayers.Count == 0)
             {
                 VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", "No player data available.", Color.Red, Context.Player.SteamUserId);
@@ -302,7 +300,6 @@ namespace VoteRewards
             }
 
             VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", response, Color.Green, Context.Player.SteamUserId);
-            return;
         }
     }
 }

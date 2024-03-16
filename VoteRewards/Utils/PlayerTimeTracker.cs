@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,7 +16,7 @@ namespace VoteRewards
     public class PlayerTimeTracker
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-        private readonly ConcurrentDictionary<ulong, (DateTime JoinTime, string NickName, TimeSpan TotalTimeSpent)> _playerData = new ConcurrentDictionary<ulong, (DateTime, string, TimeSpan)>();
+        private readonly ConcurrentDictionary<ulong, (Stopwatch SessionTimer, string NickName, TimeSpan TotalTimeSpent)> _playerData = new ConcurrentDictionary<ulong, (Stopwatch, string, TimeSpan)>();
         private readonly object _updateLock = new object();
         private readonly string _dataFilePath;
 
@@ -51,78 +52,65 @@ namespace VoteRewards
         {
             LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Player joined: {player.Name} (SteamID: {player.SteamId})");
 
+            var stopwatch = new Stopwatch();
             var isNewPlayer = !_playerData.ContainsKey(player.SteamId);
             _playerData.AddOrUpdate(player.SteamId,
-                (DateTime.UtcNow, player.Name, TimeSpan.Zero),
-                (key, existingValue) => (DateTime.UtcNow, player.Name, existingValue.TotalTimeSpent));
+                (stopwatch, player.Name, TimeSpan.Zero),
+                (key, existingValue) => (existingValue.SessionTimer, player.Name, existingValue.TotalTimeSpent));
+
+            stopwatch.Start();
 
             if (isNewPlayer)
             {
-                // Asynchronicznie zapisz czas gracza jako zero, jeśli to nowy gracz
-                Task.Run(() => SavePlayerTimeAsync(player.SteamId, player.Name, TimeSpan.Zero));
-
+                SavePlayerTime(player.SteamId, player.Name, TimeSpan.Zero);
                 if (!VoteRewardsMain.Instance.Config.UseDatabase)
                 {
-                    // Asynchroniczna synchronizacja danych z innymi serwerami tylko jeśli baza danych nie jest używana
-                    Task.Run(() => NexusManager.SendPlayerTimeDataToAllServers(player.SteamId, player.Name, TimeSpan.Zero));
+                    NexusManager.SendPlayerTimeDataToAllServers(player.SteamId, player.Name, TimeSpan.Zero);
                 }
             }
         }
 
-
         public void OnPlayerLeft(IPlayer player)
         {
-            LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Player left: {player.Name} (SteamID: {player.SteamId})");
             if (_playerData.TryGetValue(player.SteamId, out var playerInfo))
             {
-                var timeSpentThisSession = DateTime.UtcNow - playerInfo.JoinTime;
+                playerInfo.SessionTimer.Stop();
+                var timeSpentThisSession = playerInfo.SessionTimer.Elapsed;
                 var totalTimeSpent = playerInfo.TotalTimeSpent + timeSpentThisSession;
 
                 lock (_updateLock)
                 {
-                    UpdatePlayerData(player.SteamId, player.Name, totalTimeSpent);
+                    _playerData[player.SteamId] = (new Stopwatch(), playerInfo.NickName, totalTimeSpent);
                 }
 
                 LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Player {player.Name} (SteamID: {player.SteamId}) spent {timeSpentThisSession.TotalMinutes} minutes on the server this session.");
                 LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Total time spent by {player.Name} (SteamID: {player.SteamId}) on the server: {totalTimeSpent.TotalMinutes} minutes.");
 
-                Task.Run(() => SavePlayerTimeAsync(player.SteamId, player.Name, totalTimeSpent));
-
+                SavePlayerTime(player.SteamId, playerInfo.NickName, totalTimeSpent);
                 if (!VoteRewardsMain.Instance.Config.UseDatabase)
                 {
-                    Task.Run(() => NexusManager.SendPlayerTimeDataToAllServers(player.SteamId, player.Name, totalTimeSpent));
+                    NexusManager.SendPlayerTimeDataToAllServers(player.SteamId, playerInfo.NickName, totalTimeSpent);
                 }
             }
         }
 
         public void UpdatePlayerData(ulong steamId, string nickName, TimeSpan totalTimeSpent)
         {
-            // Bezpośrednia aktualizacja, zakładając że totalTimeSpent jest już skumulowanym czasem
-            _playerData.AddOrUpdate(steamId,
-                // Jeśli klucz nie istnieje, dodaj nowy wpis
-                (DateTime.UtcNow, nickName, totalTimeSpent),
-                // Jeśli klucz istnieje, zaktualizuj wpis
-                (key, existingValue) => {
-                    var updatedTimeSpent = totalTimeSpent > existingValue.TotalTimeSpent ? totalTimeSpent : existingValue.TotalTimeSpent;
-                    return (DateTime.UtcNow, nickName, updatedTimeSpent);
-                });
+            if (_playerData.TryGetValue(steamId, out var playerInfo))
+            {
+                lock (_updateLock)
+                {
+                    _playerData[steamId] = (playerInfo.SessionTimer, nickName, totalTimeSpent);
+                }
+            }
         }
 
-
-
-        public async Task SaveAllPlayerTimesAsync()
-        {
-            Log.Info("Saving all player times asynchronously.");
-            var tasks = _playerData.Select(kvp => SavePlayerTimeAsync(kvp.Key, kvp.Value.NickName, kvp.Value.TotalTimeSpent));
-            await Task.WhenAll(tasks);
-        }
-
-        public async Task SavePlayerTimeAsync(ulong steamId, string nickName, TimeSpan totalTimeSpent)
+        public void SavePlayerTime(ulong steamId, string nickName, TimeSpan totalTimeSpent)
         {
             if (VoteRewardsMain.Instance.Config.UseDatabase)
             {
-                LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, "SavePlayerTimeAsync(): Calling database communication.");
-                await VoteRewardsMain.Instance.DatabaseManager.SavePlayerTimeAsync((long)steamId, nickName, totalTimeSpent);
+                LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, "SavePlayerTime(): Calling database communication.");
+                VoteRewardsMain.Instance.DatabaseManager.SavePlayerTime((long)steamId, nickName, totalTimeSpent);
             }
             else
             {
@@ -145,7 +133,8 @@ namespace VoteRewards
                             new XElement("TotalTimeSpent", totalMinutes)));
                     }
 
-                    await Task.Run(() => storage.SavePlayerData(doc));
+                    // Bezpośredni zapis bez Task.Run
+                    storage.SavePlayerData(doc);
                     LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"Saved player time data for {nickName} (SteamID: {steamId}).");
                 }
                 catch (Exception ex)
@@ -155,15 +144,16 @@ namespace VoteRewards
             }
         }
 
-        private async Task LoadPlayerTimes()
+        private void LoadPlayerTimes()
         {
             if (VoteRewardsMain.Instance.Config.UseDatabase)
             {
                 LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, "LoadPlayerTimes(): Calling database communication.");
-                var playerTimes = await VoteRewardsMain.Instance.DatabaseManager.GetAllPlayerTimesAsync();
+                // Uwaga: Potrzebna jest synchroniczna wersja tej metody
+                var playerTimes = VoteRewardsMain.Instance.DatabaseManager.GetAllPlayerTimes();
                 foreach (var (steamId, nickName, totalTimeSpent) in playerTimes)
                 {
-                    _playerData[(ulong)steamId] = (DateTime.UtcNow, nickName, TimeSpan.FromMinutes(totalTimeSpent));
+                    _playerData[(ulong)steamId] = (new Stopwatch(), nickName, TimeSpan.FromMinutes(totalTimeSpent));
                 }
             }
             else
@@ -177,7 +167,7 @@ namespace VoteRewards
                         var steamId = ulong.Parse(playerElement.Attribute("SteamID").Value);
                         var nickName = playerElement.Element("NickName").Value;
                         var minutes = double.Parse(playerElement.Element("TotalTimeSpent").Value);
-                        _playerData[steamId] = (DateTime.MinValue, nickName, TimeSpan.FromMinutes(minutes));
+                        _playerData[steamId] = (new Stopwatch(), nickName, TimeSpan.FromMinutes(minutes));
                     }
                     LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, "Loaded player times from XML file.");
                 }
@@ -192,28 +182,19 @@ namespace VoteRewards
         {
             if (_playerData.TryGetValue(steamId, out var playerInfo))
             {
-                return playerInfo.TotalTimeSpent;
+                return playerInfo.TotalTimeSpent + (playerInfo.SessionTimer.IsRunning ? playerInfo.SessionTimer.Elapsed : TimeSpan.Zero);
             }
             return TimeSpan.Zero;
         }
 
-        public async Task<List<(string NickName, TimeSpan TotalTimeSpent)>> GetTopPlayers(int count)
+        public List<(string NickName, TimeSpan TotalTimeSpent)> GetTopPlayers(int count)
         {
-            if (VoteRewardsMain.Instance.Config.UseDatabase)
-            {
-                var topPlayers = await VoteRewardsMain.Instance.DatabaseManager.GetTopPlayersFromDatabase(count);
-                return topPlayers;
-            }
-            else
-            {
-                return _playerData.Values
-                    .OrderByDescending(p => p.TotalTimeSpent)
-                    .Take(count)
-                    .Select(p => (p.NickName, p.TotalTimeSpent))
-                    .ToList();
-            }
+            return _playerData.Values
+                .Select(x => (x.NickName, TotalTimeSpent: x.TotalTimeSpent + (x.SessionTimer.IsRunning ? x.SessionTimer.Elapsed : TimeSpan.Zero)))
+                .OrderByDescending(p => p.TotalTimeSpent)
+                .Take(count)
+                .ToList();
         }
-
 
         public void SubtractPlayerTime(ulong steamId, TimeSpan timeToSubtract)
         {
@@ -225,8 +206,8 @@ namespace VoteRewards
                     newTotalTime = TimeSpan.Zero;
                 }
 
-                _playerData[steamId] = (playerInfo.JoinTime, playerInfo.NickName, newTotalTime);
-                Task.Run(() => SavePlayerTimeAsync(steamId, playerInfo.NickName, newTotalTime));
+                _playerData[steamId] = (playerInfo.SessionTimer, playerInfo.NickName, newTotalTime);
+                Task.Run(() => SavePlayerTime(steamId, playerInfo.NickName, newTotalTime));
             }
             else
             {
@@ -250,13 +231,9 @@ namespace VoteRewards
         {
             lock (_updateLock)
             {
-                // Aktualizuj dane gracza lub dodaj nowego gracza
                 UpdatePlayerData(steamId, nickName, totalTimeSpent);
-
-                // Asynchronicznie zapisz aktualizacje
-                Task.Run(() => SavePlayerTimeAsync(steamId, nickName, totalTimeSpent));
+                Task.Run(() => SavePlayerTime(steamId, nickName, totalTimeSpent));
             }
         }
-
     }
 }

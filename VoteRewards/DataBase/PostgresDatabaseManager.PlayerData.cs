@@ -7,19 +7,19 @@ namespace VoteRewards.DataBase
 {
     public partial class PostgresDatabaseManager
     {
-        public async Task SavePlayerTimeAsync(long steamId, string nickName, TimeSpan totalTimeSpent)
+        public void SavePlayerTime(long steamId, string nickName, TimeSpan totalTimeSpent)
         {
             try
             {
                 using (var PlayerDataConnection = new NpgsqlConnection(_connectionString))
                 {
-                    await PlayerDataConnection.OpenAsync();
+                    PlayerDataConnection.Open();
 
                     var checkQuery = "SELECT COUNT(*) FROM VoteRewards_Player_Data WHERE steam_id = @SteamId;";
                     using (var checkCmd = new NpgsqlCommand(checkQuery, PlayerDataConnection))
                     {
                         checkCmd.Parameters.AddWithValue("@SteamId", steamId);
-                        var exists = (long)await checkCmd.ExecuteScalarAsync() > 0;
+                        var exists = (long)checkCmd.ExecuteScalar() > 0;
 
                         string commandText;
                         if (exists)
@@ -41,7 +41,7 @@ namespace VoteRewards.DataBase
                             cmd.Parameters.AddWithValue("@SteamId", steamId);
                             cmd.Parameters.AddWithValue("@NickName", nickName);
                             cmd.Parameters.AddWithValue("@TotalTimeSpent", (long)totalTimeSpent.TotalMinutes);
-                            await cmd.ExecuteNonQueryAsync();
+                            cmd.ExecuteNonQuery();
                         }
                     }
                 }
@@ -52,20 +52,21 @@ namespace VoteRewards.DataBase
             }
         }
 
-        public async Task<List<(long SteamId, string NickName, long TotalTimeSpent)>> GetAllPlayerTimesAsync()
+
+        public List<(long SteamId, string NickName, long TotalTimeSpent)> GetAllPlayerTimes()
         {
             var playersData = new List<(long SteamId, string NickName, long TotalTimeSpent)>();
             try
             {
                 using (var PlayerDataConnection = new NpgsqlConnection(_connectionString))
                 {
-                    await PlayerDataConnection.OpenAsync();
+                    PlayerDataConnection.Open();
                     var commandText = "SELECT steam_id, nickname, total_time_spent FROM VoteRewards_Player_Data;";
 
                     using (var cmd = new NpgsqlCommand(commandText, PlayerDataConnection))
-                    using (var reader = await cmd.ExecuteReaderAsync())
+                    using (var reader = cmd.ExecuteReader())
                     {
-                        while (await reader.ReadAsync())
+                        while (reader.Read())
                         {
                             playersData.Add((
                                 SteamId: reader.GetInt64(0),
@@ -83,6 +84,7 @@ namespace VoteRewards.DataBase
 
             return playersData;
         }
+
 
         public async Task<DateTime?> GetLastRewardClaimDateAsync(long steamId)
         {
