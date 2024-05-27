@@ -136,80 +136,73 @@ namespace VoteRewards
 
             var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig, Plugin.RefferalCodeReward, Plugin.TopVotersBenefitConfig);
 
-            int voteStatus;
             try
             {
-                voteStatus = await Plugin.ApiHelper.CheckVoteStatusAsync(steamId.ToString());
-            }
-            catch (Exception ex)
-            {
-                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to check your vote status. Please try again later.", Color.Green, Context.Player.SteamUserId);
-                VoteRewardsMain.Log.Warn("Failed to check the vote status: " + ex.Message);
-                return;
-            }
+                int voteStatus = await Plugin.ApiHelper.CheckVoteStatusAsync(steamId.ToString());
+                List<string> messages = new List<string> { $"{Plugin.Config.NotificationPrefix}" };
 
-            List<string> messages = new List<string> { $"{Plugin.Config.NotificationPrefix}" };
+                switch (voteStatus)
+                {
+                    case -1:
+                        messages.Add("Failed to check your vote status. Please try again later.");
+                        break;
+                    case 0:
+                        messages.Add("You have not voted yet. Please vote first.");
+                        break;
+                    case 1:
+                        List<RewardItem> rewards = getRandomRewardsUtils.GetRandomRewards();
+                        rewards.RemoveAll(item => item == null);
 
-            switch (voteStatus)
-            {
-                case -1:
-                    messages.Add("Failed to check your vote status. Please try again later.");
-                    break;
-                case 0:
-                    messages.Add("You have not voted yet. Please vote first.");
-                    break;
-                case 1:
-                    List<RewardItem> rewards = getRandomRewardsUtils.GetRandomRewards();
-                    rewards.RemoveAll(item => item == null);
-
-                    if (rewards.Any())
-                    {
-                        var successfulRewards = new List<string>();
-
-                        foreach (var reward in rewards)
+                        if (rewards.Any())
                         {
-                            int randomAmount = getRandomRewardsUtils.GetRandomAmount(reward.AmountOne, reward.AmountTwo);
-                            bool rewardGranted = PlayerRewardManager.AwardPlayer(Context.Player.SteamUserId, reward, randomAmount, VoteRewardsMain.Log, Plugin.Config);
-                            if (rewardGranted)
-                            {
+                            var successfulRewards = new List<string>();
 
-                                successfulRewards.Add($"{randomAmount}x {reward.ItemSubtypeId}");
-                                VoteRewardsMain.Log.Info($"Player {steamId} received {randomAmount} of {reward.ItemSubtypeId}.");
+                            foreach (var reward in rewards)
+                            {
+                                int randomAmount = getRandomRewardsUtils.GetRandomAmount(reward.AmountOne, reward.AmountTwo);
+                                bool rewardGranted = PlayerRewardManager.AwardPlayer(Context.Player.SteamUserId, reward, randomAmount, VoteRewardsMain.Log, Plugin.Config);
+                                if (rewardGranted)
+                                {
+                                    successfulRewards.Add($"{randomAmount}x {reward.ItemSubtypeId}");
+                                    VoteRewardsMain.Log.Info($"Player {steamId} received {randomAmount} of {reward.ItemSubtypeId}.");
+                                }
+                                else
+                                {
+                                    VoteRewardsMain.Log.Warn($"Player {steamId}'s inventory is full. Could not grant reward.");
+                                }
+                            }
+
+                            if (successfulRewards.Any())
+                            {
+                                messages.Add("You received:");
+                                messages.AddRange(successfulRewards);
+                                messages.Add("Thank you for voting!");
+                                await Plugin.ApiHelper.SetVoteAsClaimedAsync(steamId);
                             }
                             else
                             {
-                                VoteRewardsMain.Log.Warn($"Player {steamId}'s inventory is full. Could not grant reward.");
+                                messages.Add("Your inventory is full. Please make space to receive your reward.");
                             }
-                        }
-
-                        if (successfulRewards.Any())
-                        {
-                            messages.Add("You received:");
-                            messages.AddRange(successfulRewards.Select(reward => $"{reward}"));
-                            messages.Add("Thank you for voting!");
-
-                            await Plugin.ApiHelper.SetVoteAsClaimedAsync(steamId);
                         }
                         else
                         {
-                            messages.Add("Your inventory is full. Please make space to receive your reward.");
+                            messages.Add("No reward available at the moment. Please try again later.");
+                            VoteRewardsMain.Log.Warn("No reward item found for player " + steamId);
                         }
-                    }
-                    else
-                    {
-                        messages.Add("No reward available at the moment. Please try again later.");
-                        VoteRewardsMain.Log.Warn("No reward item found for player " + steamId);
-                    }
-                    break;
-                case 2:
-                    messages.Add("You have already claimed your vote reward.");
-                    break;
+                        break;
+                    case 2:
+                        messages.Add("You have already claimed your vote reward.");
+                        break;
+                }
+
+                VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
             }
-
-            VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
+            catch (Exception ex)
+            {
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "We encountered an error processing your request. Please try again later.", Color.Red, Context.Player.SteamUserId);
+                VoteRewardsMain.Log.Warn($"Reward command failed for {steamId}: {ex.Message}");
+            }
         }
-
-
 
         [Command("topvoters", "Shows top 10 voters of the month.")]
         [Permission(MyPromoteLevel.None)]
@@ -218,25 +211,20 @@ namespace VoteRewards
             try
             {
                 string responseContent = await Plugin.ApiHelper.GetTopVotersAsync();
-                if (responseContent.StartsWith("Error"))
+                if (responseContent.StartsWith("Error:"))
                 {
-                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"{responseContent}", Color.Red, Context.Player.SteamUserId);
+                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", responseContent, Color.Red, Context.Player.SteamUserId);
                     return;
                 }
 
-                // Deserializacja JSON do obiektu VoterResponse
                 var voterResponse = JsonConvert.DeserializeObject<VoterResponse>(responseContent);
-
-                // Sprawdzenie, czy lista voters jest pusta
                 if (voterResponse?.Voters == null || voterResponse.Voters.Count == 0)
                 {
                     VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "No voters data available.", Color.Red, Context.Player.SteamUserId);
                     return;
                 }
 
-                // Przygotowanie wiadomości z top 10 głosujących
                 string message = "Top 10 Voters:\n" + string.Join("\n", voterResponse.Voters.Select((voter, index) => $"{index + 1}. {voter.Nickname} - {voter.Votes} votes"));
-
                 VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", message, Color.Green, Context.Player.SteamUserId);
             }
             catch (Exception ex)
@@ -245,8 +233,6 @@ namespace VoteRewards
                 VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to retrieve top voters. Please try again later.", Color.Red, Context.Player.SteamUserId);
             }
         }
-
-
 
         [Command("subtracttime", "Subtracts time from a player's total playtime.")]
         [Permission(MyPromoteLevel.Admin)]
