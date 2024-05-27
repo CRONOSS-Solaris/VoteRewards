@@ -8,7 +8,6 @@ namespace VoteRewards.Utils
     public class VoteApiHelper
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-
         private string ServerApiKey => VoteRewardsMain.Instance.Config.ServerApiKey;
 
         public VoteApiHelper()
@@ -19,7 +18,7 @@ namespace VoteRewards.Utils
         {
             string apiUrl = $"https://space-engineers.com/api/?object=votes&element=claim&key={ServerApiKey}&steamid={steamId}";
 
-            using (HttpClient client = new HttpClient())
+            using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) })
             {
                 HttpResponseMessage response;
 
@@ -32,9 +31,20 @@ namespace VoteRewards.Utils
                     Log.Warn("API(): Network error while contacting the API: " + e.Message);
                     return -1;
                 }
+                catch (Exception e)
+                {
+                    Log.Error("API(): Unexpected error while contacting the API: " + e.Message);
+                    return -1;
+                }
 
                 string responseContent = await response.Content.ReadAsStringAsync();
                 LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"API(): API Response: {responseContent}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Log.Warn($"API(): Unsuccessful API response: {response.StatusCode}");
+                    return -1;
+                }
 
                 if (responseContent.Contains("Error"))
                 {
@@ -56,7 +66,7 @@ namespace VoteRewards.Utils
         {
             string apiUrl = $"https://space-engineers.com/api/?action=post&object=votes&element=claim&key={ServerApiKey}&steamid={steamId}";
 
-            using (HttpClient client = new HttpClient())
+            using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) })
             {
                 HttpResponseMessage response;
                 try
@@ -68,9 +78,20 @@ namespace VoteRewards.Utils
                     Log.Warn("API(): Network error while contacting the API: " + e.Message);
                     throw;
                 }
+                catch (Exception e)
+                {
+                    Log.Error("API(): Unexpected error while setting vote as claimed: " + e.Message);
+                    throw;
+                }
 
                 string responseContent = await response.Content.ReadAsStringAsync();
                 LoggerHelper.DebugLog(Log, VoteRewardsMain.Instance.Config, $"API(): API Response for setting vote as claimed: {responseContent}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Log.Warn($"API(): Unsuccessful API response: {response.StatusCode}");
+                    throw new Exception("API response was not successful.");
+                }
 
                 if (responseContent.Contains("Error"))
                 {
@@ -90,7 +111,7 @@ namespace VoteRewards.Utils
         {
             string apiUrl = $"https://space-engineers.com/api/?object=servers&element=voters&key={ServerApiKey}&month={period}&format=json&limit={limit}&rank={rankBy}";
 
-            using (HttpClient client = new HttpClient())
+            using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) })
             {
                 HttpResponseMessage response;
                 try
@@ -101,6 +122,11 @@ namespace VoteRewards.Utils
                 {
                     Log.Warn("API(): Network error while contacting the API: " + e.Message);
                     return "Error: Network error.";
+                }
+                catch (Exception e)
+                {
+                    Log.Error("API(): Unexpected error while retrieving top voters: " + e.Message);
+                    return "Error: Unexpected error.";
                 }
 
                 if (!response.IsSuccessStatusCode)
@@ -114,12 +140,12 @@ namespace VoteRewards.Utils
                 return responseContent;
             }
         }
-        
+
         public async Task<string> GetTopVotersBySteamIdAsync(string period = "previous", int limit = 10000, string rankBy = "steamid")
         {
             string apiUrl = $"https://space-engineers.com/api/?object=servers&element=voters&key={ServerApiKey}&month={period}&format=json&limit={limit}&rank={rankBy}";
 
-            using (HttpClient client = new HttpClient())
+            using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) })
             {
                 HttpResponseMessage response;
                 try
@@ -130,6 +156,11 @@ namespace VoteRewards.Utils
                 {
                     Log.Warn("API(): Network error while contacting the API: " + e.Message);
                     return "Error: Network error.";
+                }
+                catch (Exception e)
+                {
+                Log.Error("API(): Unexpected error while retrieving voters by Steam ID: " + e.Message);
+                    return "Error: Unexpected error.";
                 }
 
                 if (!response.IsSuccessStatusCode)
