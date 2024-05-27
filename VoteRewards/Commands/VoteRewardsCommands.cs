@@ -220,7 +220,7 @@ namespace VoteRewards
                 string responseContent = await Plugin.ApiHelper.GetTopVotersAsync();
                 if (responseContent.StartsWith("Error"))
                 {
-                    Context.Respond(responseContent);
+                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"{responseContent}", Color.Red, Context.Player.SteamUserId);
                     return;
                 }
 
@@ -230,7 +230,6 @@ namespace VoteRewards
                 // Sprawdzenie, czy lista voters jest pusta
                 if (voterResponse?.Voters == null || voterResponse.Voters.Count == 0)
                 {
-                    Context.Respond("No voters data available.");
                     VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "No voters data available.", Color.Red, Context.Player.SteamUserId);
                     return;
                 }
@@ -243,7 +242,7 @@ namespace VoteRewards
             catch (Exception ex)
             {
                 VoteRewardsMain.Log.Warn("Failed to get top voters: " + ex.Message);
-                Context.Respond("Failed to retrieve top voters. Please try again later.");
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to retrieve top voters. Please try again later.", Color.Red, Context.Player.SteamUserId);
             }
         }
 
@@ -264,14 +263,14 @@ namespace VoteRewards
                 }
                 else
                 {
-                    Context.Respond($"Player with NickName '{playerIdentifier}' not found.");
+                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Player with NickName '{playerIdentifier}' not found.", Color.Red, Context.Player.SteamUserId);
                     return;
                 }
             }
 
             TimeSpan timeToSubtract = TimeSpan.FromMinutes(minutes);
             Plugin.PlayerTimeTracker.SubtractPlayerTime(steamId, timeToSubtract);
-            Context.Respond($"Subtracted {minutes} minutes from player's (SteamID: {steamId}) playtime.");
+            VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Subtracted {minutes} minutes from player's (SteamID: {steamId}) playtime.", Color.Red, Context.Player.SteamUserId);
         }
 
         [Command("topplaytime", "Shows top 5 players with the most time spent on the server.")]
