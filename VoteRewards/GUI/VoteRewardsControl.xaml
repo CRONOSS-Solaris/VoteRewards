@@ -231,6 +231,26 @@
                     <Button Style="{StaticResource ButtonStyle1}" Grid.Column="3" Grid.Row="5" Content="SUPPORT" Margin="5" HorizontalAlignment="Right" VerticalAlignment="Top" Width="150" Height="25" Click="SupportButton_OnClick"/>
                 </Grid>
             </TabItem>
+
+            <TabItem Header="Discord BOT">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Labels"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Buttons"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="SupportButton"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                </Grid>
+            </TabItem>
         </TabControl>
     </Grid>
 </UserControl>

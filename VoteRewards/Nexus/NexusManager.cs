@@ -40,42 +40,6 @@ namespace VoteRewards.Nexus
                     case NexusMessage.MessageType.BaseConfig:
                         HandleConfigurationMessage(message);
                         break;
-                    case NexusMessage.MessageType.TimeSpentRewardsConfig:
-                        HandleTimeSpentRewardsConfigMessage(message); 
-                        break;
-                    case NexusMessage.MessageType.RewardItemsConfig:
-                        HandleRewardItemsConfigMessage(message);
-                        break;
-                    case NexusMessage.MessageType.RefferalCodeReward:
-                        HandleRefferalCodeRewardMessage(message);
-                        break;
-                    case NexusMessage.MessageType.EventCodeReward:
-                        HandleEventCodeRewardMessage(message);
-                        break;
-                    case NexusMessage.MessageType.RefferalCodeCreate:
-                        HandleRefferalCodeCreateMessage(message);
-                        break;
-                    case NexusMessage.MessageType.RedeemReferralCode:
-                        HandleRedeemReferralCodeMessage(message);
-                        break;
-                    case NexusMessage.MessageType.AwardReferralCode:
-                        HandleAwardReferralCodeMessage(message);
-                        break;
-                    case NexusMessage.MessageType.EventCodeCreate:
-                        HandleEventCodeCreateMessage(message);
-                        break;
-                    case NexusMessage.MessageType.RedeemEventCode:
-                        HandleRedeemEventCodeMessage(message);
-                        break;
-                    case NexusMessage.MessageType.PlayerTimeTracker:
-                        HandlePlayerTimeTrackerMessage(message);
-                        break;
-                    case NexusMessage.MessageType.PlayerRewardTracker:
-                        HandlePlayerRewardTrackerMessage(message);
-                        break;
-                    case NexusMessage.MessageType.TopVotersBenefitConfig:
-                        HandleTopVotersBenefitConfigMessage(message);
-                        break;
 
                     default:
                         Log.Warn($"Received an unknown type of Nexus message. Type: {message.Type}");

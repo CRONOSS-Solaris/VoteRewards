@@ -199,19 +199,27 @@ namespace VoteRewards
                     }
 
                     ItemLoader.LoadAvailableItemTypesAndSubtypes(AvailableItemTypes, AvailableItemSubtypes, Log, Config);
-                    _control.Dispatcher.Invoke(() => _control.UpdateButtonState(true));
+
+                    // Sprawdzenie systemu operacyjnego przed aktualizacją stanu przycisków
+                    if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                    {
+                        _control.Dispatcher.Invoke(() => _control.UpdateButtonState(true));
+                    }
                     break;
 
                 case TorchSessionState.Unloading:
                     Log.Info("Session Unloading!");
 
-
-                    // Ustawienie menedżera na null podczas rozładowywania sesji
+                    // Sprawdzenie systemu operacyjnego przed aktualizacją stanu przycisków
+                    if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                    {
+                        _control.Dispatcher.Invoke(() => _control.UpdateButtonState(false));
+                    }
                     _multiplayerManager = null;
-                    _control.Dispatcher.Invoke(() => _control.UpdateButtonState(false));
                     break;
             }
         }
+
 
         private void UpdatePlayerTimeSpent(object state)
         {
