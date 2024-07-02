@@ -50,10 +50,16 @@ namespace VoteRewards
 
             // Sprawdzanie ostatniej daty odbioru nagrody
             var lastClaimDate = await rewardTracker.GetLastRewardClaimDate(Context.Player.SteamUserId);
-            if (lastClaimDate.HasValue && (DateTime.UtcNow - lastClaimDate.Value).TotalDays < 30)
+            if (lastClaimDate.HasValue)
             {
-                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "You can only claim the top voter reward once a month. Please try again later.", Color.Green, Context.Player.SteamUserId);
-                return;
+                var nextClaimDate = lastClaimDate.Value.AddDays(30);
+                var remainingTime = nextClaimDate - DateTime.UtcNow;
+
+                if (remainingTime > TimeSpan.Zero)
+                {
+                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"You can only claim the top voter reward once a month. You can claim your next reward in {remainingTime.Days} days, {remainingTime.Hours} hours.", Color.Green, Context.Player.SteamUserId);
+                    return;
+                }
             }
 
             // Pobieranie liczby głosów dla gracza
@@ -85,11 +91,11 @@ namespace VoteRewards
 
                     if (successfulTopRewards.Any())
                     {
-                        messages.Add("Based on your votes, you received:");
+                        messages.Add($"You have {playerVotes} votes and have received the following rewards:");
                         messages.AddRange(successfulTopRewards.Select(reward => $"{reward}"));
                         // Aktualizacja daty ostatniego odbioru nagrody
                         rewardTracker.UpdateLastRewardClaimDate(Context.Player.SteamUserId, DateTime.UtcNow);
-                        
+
                         if (!VoteRewardsMain.Instance.Config.UseDatabase)
                         {
                             // Tylko wtedy wysyłaj dane przez NexusManager, gdy nie korzystamy z bazy danych
@@ -102,11 +108,20 @@ namespace VoteRewards
 
             if (!rewardGrantedFlag)
             {
-                messages.Add("You did not reach the vote threshold for a reward.");
+                messages.Add($"You have {playerVotes} votes but did not reach the vote threshold for a reward.");
+                if (playerVotes > 0)
+                {
+                    messages.Add("Keep voting to earn more rewards!");
+                }
+                else
+                {
+                    messages.Add("Start voting to earn great rewards!");
+                }
             }
 
             VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
         }
+
 
         [Command("reward", "Allows the player to claim their vote reward.")]
         [Permission(MyPromoteLevel.None)]
