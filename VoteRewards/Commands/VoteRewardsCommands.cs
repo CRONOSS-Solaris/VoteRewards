@@ -52,12 +52,13 @@ namespace VoteRewards
             var lastClaimDate = await rewardTracker.GetLastRewardClaimDate(Context.Player.SteamUserId);
             if (lastClaimDate.HasValue)
             {
-                var nextClaimDate = lastClaimDate.Value.AddDays(30);
-                var remainingTime = nextClaimDate - DateTime.UtcNow;
+                var lastClaimMonth = new DateTime(lastClaimDate.Value.Year, lastClaimDate.Value.Month, 1);
+                var currentMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
 
-                if (remainingTime > TimeSpan.Zero)
+                if (lastClaimMonth >= currentMonth)
                 {
-                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"You can only claim the top voter reward once a month. You can claim your next reward in {remainingTime.Days} days, {remainingTime.Hours} hours.", Color.Green, Context.Player.SteamUserId);
+                    var nextClaimMonth = currentMonth.AddMonths(1);
+                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"You can only claim the top voter reward once a month. You can claim your next reward on {nextClaimMonth:dd/MM/yyyy}.", Color.Green, Context.Player.SteamUserId);
                     return;
                 }
             }
@@ -121,7 +122,6 @@ namespace VoteRewards
 
             VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
         }
-
 
         [Command("reward", "Allows the player to claim their vote reward.")]
         [Permission(MyPromoteLevel.None)]
