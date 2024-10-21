@@ -201,7 +201,7 @@ namespace VoteRewards
                     ItemLoader.LoadAvailableItemTypesAndSubtypes(AvailableItemTypes, AvailableItemSubtypes, Log, Config);
 
                     // Sprawdzenie systemu operacyjnego przed aktualizacją stanu przycisków
-                    if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                    if (Environment.OSVersion.Platform == PlatformID.Win32NT && _control != null)
                     {
                         _control.Dispatcher.Invoke(() => _control.UpdateButtonState(true));
                     }
@@ -211,7 +211,7 @@ namespace VoteRewards
                     Log.Info("Session Unloading!");
 
                     // Sprawdzenie systemu operacyjnego przed aktualizacją stanu przycisków
-                    if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                    if (Environment.OSVersion.Platform == PlatformID.Win32NT && _control != null)
                     {
                         _control.Dispatcher.Invoke(() => _control.UpdateButtonState(false));
                     }
