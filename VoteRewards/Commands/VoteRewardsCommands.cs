@@ -4,8 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
+using Torch.API.Managers;
 using Torch.Commands;
 using Torch.Commands.Permissions;
+using Torch.Mod.Messages;
+using Torch.Mod;
 using VoteRewards.Nexus;
 using VoteRewards.Utils;
 using VRage.Game.ModAPI;
@@ -18,6 +22,42 @@ namespace VoteRewards
     {
 
         public VoteRewardsMain Plugin => (VoteRewardsMain)Context.Plugin;
+
+        [Command("votehelp", "Shows help for commands available to you.")]
+        [Permission(MyPromoteLevel.None)]
+        public void Help()
+        {
+            var commandManager = Context.Torch.CurrentSession?.Managers.GetManager<CommandManager>();
+            if (commandManager == null)
+            {
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Must have an attached session to list commands", Color.Red, Context.Player.SteamUserId);
+                return;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            var playerPromoteLevel = Context.Player?.PromoteLevel ?? MyPromoteLevel.None;
+
+            // Iterate over all commands and add them to the StringBuilder if they are from this plugin and the player has the required permissions.
+            foreach (CommandTree.CommandNode command in commandManager.Commands.WalkTree())
+            {
+                if (command.IsCommand && command.Command.Plugin == this.Plugin && command.Command.MinimumPromoteLevel <= playerPromoteLevel)
+                {
+                    sb.AppendLine($"{command.Command.SyntaxHelp}\n    {command.Command.HelpText}\n");
+                }
+            }
+
+            // Check if there were any commands to list, then send them using ModCommunication to display as MOTD in dialog.
+            if (sb.Length > 0)
+            {
+                string message = sb.ToString().TrimEnd();
+                var dialogMessage = new DialogMessage("Event System Help", "Available commands:", message);
+                ModCommunication.SendMessageTo(dialogMessage, Context.Player.SteamUserId);
+            }
+            else
+            {
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "No commands available for your permission level.", Color.Red, Context.Player.SteamUserId);
+            }
+        }
 
         [Command("votelink", "Directs the player to the voting page.")]
         [Permission(MyPromoteLevel.None)]
