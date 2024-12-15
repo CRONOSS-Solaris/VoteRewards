@@ -33,18 +33,28 @@ namespace VoteRewards.Utils
 
         private void LoadReferralCodes()
         {
-            if (File.Exists(_filePath))
+            if (VoteRewardsMain.Instance.Config.UseDatabase)
             {
-                var json = File.ReadAllText(_filePath);
-                _referralCodes = JsonConvert.DeserializeObject<List<ReferralCode>>(json) ?? new List<ReferralCode>();
-                Log.Info($"Loaded {_referralCodes.Count} referral codes from file.");
+                // Załaduj kody z bazy danych
+                _referralCodes = VoteRewardsMain.Instance.DatabaseManager.LoadReferralCodesAsync().Result;
             }
             else
             {
-                _referralCodes = new List<ReferralCode>();
-                Log.Info("No referral codes file found, starting with an empty list.");
+                // Załaduj kody z pliku
+                if (File.Exists(_filePath))
+                {
+                    var json = File.ReadAllText(_filePath);
+                    _referralCodes = JsonConvert.DeserializeObject<List<ReferralCode>>(json) ?? new List<ReferralCode>();
+                }
+                else
+                {
+                    _referralCodes = new List<ReferralCode>();
+                }
             }
+
+            Log.Info($"Loaded {_referralCodes.Count} referral codes.");
         }
+
 
 
         public ReferralCode CreateReferralCode(ulong steamId, string playerName)
@@ -128,40 +138,41 @@ namespace VoteRewards.Utils
 
         public RedeemCodeResult RedeemReferralCode(string code, ulong redeemerSteamId)
         {
-            // Sprawdzanie, czy gracz już wykorzystał jakiś kod
-            if (HasPlayerUsedAnyCode(redeemerSteamId))
+            if (VoteRewardsMain.Instance.Config.UseDatabase)
             {
-                return RedeemCodeResult.AlreadyUsed;
+                var result = VoteRewardsMain.Instance.DatabaseManager.RedeemCodeInDatabaseAsync(code, (long)redeemerSteamId).GetAwaiter().GetResult();
+                return result;
             }
-
-            //if (VoteRewardsMain.Instance.PlayerTimeTracker.GetTotalTimeSpent(redeemerSteamId) >= TimeSpan.FromMinutes(_config.ReferralCodeUsageTimeLimit))
-            //{
-            //    return RedeemCodeResult.TooMuchTimeSpent;
-            //}
-
-            var referralCode = _referralCodes.FirstOrDefault(rc => rc.Codes.Contains(code));
-            if (referralCode == null)
+            else
             {
-                return RedeemCodeResult.CodeNotFound;
+                if (HasPlayerUsedAnyCode(redeemerSteamId))
+                {
+                    return RedeemCodeResult.AlreadyUsed;
+                }
+
+                var referralCode = _referralCodes.FirstOrDefault(rc => rc.Codes.Contains(code));
+                if (referralCode == null)
+                {
+                    return RedeemCodeResult.CodeNotFound;
+                }
+
+                if (referralCode.SteamId == redeemerSteamId)
+                {
+                    return RedeemCodeResult.CannotUseOwnCode;
+                }
+
+                referralCode.RedeemedBySteamIds.Add(redeemerSteamId);
+                referralCode.CodeUsageCount++;
+
+                NexusManager.SendRedeemReferralCodeToAllServers(code, redeemerSteamId, referralCode.RedeemedBySteamIds, referralCode.CodeUsageCount);
+
+                referralCode.Codes.Remove(code);
+
+                SaveReferralCodes();
+                return RedeemCodeResult.Success;
             }
-
-            if (referralCode.SteamId == redeemerSteamId)
-            {
-                return RedeemCodeResult.CannotUseOwnCode;
-            }
-
-            // Oznaczenie kodu jako wykorzystanego i aktualizacja CodeUsageCount
-            referralCode.RedeemedBySteamIds.Add(redeemerSteamId);
-            referralCode.CodeUsageCount++;
-
-            NexusManager.SendRedeemReferralCodeToAllServers(code, redeemerSteamId, referralCode.RedeemedBySteamIds, referralCode.CodeUsageCount);
-
-            // Usunięcie wykorzystanego kodu, ponieważ jest jednorazowy
-            referralCode.Codes.Remove(code);
-
-            SaveReferralCodes();
-            return RedeemCodeResult.Success;
         }
+
 
         public bool HasPlayerUsedAnyCode(ulong steamId)
         {
@@ -170,36 +181,47 @@ namespace VoteRewards.Utils
 
         public ReferralCodeManager.RedeemCodeResult TestRedeemReferralCode(string code, ulong redeemerSteamId)
         {
-
-            var referralCode = _referralCodes.FirstOrDefault(rc => rc.Codes.Contains(code));
-            if (referralCode == null)
+            if (VoteRewardsMain.Instance.Config.UseDatabase)
             {
-                return ReferralCodeManager.RedeemCodeResult.CodeNotFound;
+                var result = VoteRewardsMain.Instance.DatabaseManager.RedeemCodeInDatabaseAsync(code, (long)redeemerSteamId).GetAwaiter().GetResult();
+                return result;
             }
+            else
+            {
+                var referralCode = _referralCodes.FirstOrDefault(rc => rc.Codes.Contains(code));
+                if (referralCode == null)
+                {
+                    return ReferralCodeManager.RedeemCodeResult.CodeNotFound;
+                }
 
-            // Pominąć ten warunek, aby zezwolić na używanie własnych kodów
-            // if (referralCode.SteamId == redeemerSteamId)
-            // {
-            //     return ReferralCodeManager.RedeemCodeResult.CannotUseOwnCode;
-            // }
+                referralCode.RedeemedBySteamIds.Add(redeemerSteamId);
+                referralCode.CodeUsageCount++;
 
-            // Oznaczenie kodu jako wykorzystanego (jeśli to potrzebne w testach)
-            referralCode.RedeemedBySteamIds.Add(redeemerSteamId);
-            referralCode.CodeUsageCount++;
-
-
-            referralCode.Codes.Remove(code); // Opcjonalnie: usunięcie wykorzystanego kodu
-            SaveReferralCodes();
-            return ReferralCodeManager.RedeemCodeResult.Success;
+                referralCode.Codes.Remove(code);
+                SaveReferralCodes();
+                return ReferralCodeManager.RedeemCodeResult.Success;
+            }
         }
+
 
 
         public void SaveReferralCodes()
         {
-            var json = JsonConvert.SerializeObject(_referralCodes, Formatting.Indented);
-            File.WriteAllText(_filePath, json);
-            Log.Info($"Saved {_referralCodes.Count} referral codes to file.");
+            if (VoteRewardsMain.Instance.Config.UseDatabase)
+            {
+                // Zapisz kody do bazy danych
+                VoteRewardsMain.Instance.DatabaseManager.SaveReferralCodesAsync(_referralCodes).Wait(); // Uwaga: async w kontekście synchronicznym tylko dla przykładu
+            }
+            else
+            {
+                // Zapisz kody do pliku
+                var json = JsonConvert.SerializeObject(_referralCodes, Formatting.Indented);
+                File.WriteAllText(_filePath, json);
+            }
+
+            Log.Info($"Saved {_referralCodes.Count} referral codes.");
         }
+
 
 
         private string GenerateCode()

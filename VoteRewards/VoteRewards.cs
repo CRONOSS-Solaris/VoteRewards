@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Xml.Linq;
 using Torch;
 using Torch.API;
 using Torch.API.Managers;
@@ -18,6 +19,7 @@ using Torch.API.Session;
 using Torch.Managers;
 using Torch.Session;
 using VoteRewards.Config;
+using VoteRewards.DataBase;
 using VoteRewards.Nexus;
 using VoteRewards.Utils;
 using VRageMath;
@@ -45,6 +47,7 @@ namespace VoteRewards
         // Pola prywatne i ich publiczne właściwości
         private VoteRewardsControl _control;
         private Persistent<VoteRewardsConfig> _config;
+        private Persistent<TopVotersBenefitConfig> _topVotersBenefitConfig;
         private Persistent<RewardItemsConfig> _rewardItemsConfig;
         private Persistent<TimeSpentRewardsConfig> _timeSpentRewardsConfig;
         private ReferralCodeManager _referralCodeManager;
@@ -52,12 +55,13 @@ namespace VoteRewards
         private Persistent<RefferalCodeReward> _refferalCodeReward;
         private Persistent<EventCodeReward> _eventCodeReward;
         private IMultiplayerManagerBase _multiplayerManager;
-        private Dictionary<ulong, TimeSpan> _playerTimeSpent = new Dictionary<ulong, TimeSpan>();
+        private Dictionary<ulong, Dictionary<TimeReward, TimeSpan>> _playerTimeSpent = new Dictionary<ulong, Dictionary<TimeReward, TimeSpan>>();
         private Timer _updatePlayerTimeSpentTimer;
-        //public PlayerTimeTracker PlayerTimeTracker { get; private set; }
+        public PlayerTimeTracker PlayerTimeTracker { get; private set; }
 
         public VoteRewardsConfig Config => _config?.Data;
         public RewardItemsConfig RewardItemsConfig => _rewardItemsConfig?.Data;
+        public TopVotersBenefitConfig TopVotersBenefitConfig => _topVotersBenefitConfig?.Data;
         public TimeSpentRewardsConfig TimeSpentRewardsConfig => _timeSpentRewardsConfig?.Data;
         public ReferralCodeManager ReferralCodeManager => _referralCodeManager;
         public EventCodeManager EventCodeManager => _eventCodeManager;
@@ -69,6 +73,10 @@ namespace VoteRewards
         public Dictionary<string, List<string>> AvailableItemSubtypes { get; private set; } = new Dictionary<string, List<string>>();
 
         public VoteApiHelper ApiHelper { get; private set; }
+
+        // PostgresSQL
+        private PostgresDatabaseManager _databaseManager;
+        public PostgresDatabaseManager DatabaseManager => _databaseManager;
 
         // Metody i ich implementacje
         public UserControl GetControl()
@@ -84,17 +92,37 @@ namespace VoteRewards
         {
             base.Init(torch);
             Instance = this;
+
             _config = SetupConfig(CONFIG_FILE_NAME, new VoteRewardsConfig());
             _rewardItemsConfig = SetupConfig(REWARD_ITEMS_CONFIG_FILE_NAME, new RewardItemsConfig());
+            _topVotersBenefitConfig = SetupConfig("TopVotersBenefitConfig.cfg", new TopVotersBenefitConfig());
             _timeSpentRewardsConfig = SetupConfig("TimeSpentRewardsConfig.cfg", new TimeSpentRewardsConfig());
             _refferalCodeReward = SetupConfig("ReferralCodeReward.cfg", new RefferalCodeReward());
             _eventCodeReward = SetupConfig("EventCodeReward.cfg", new EventCodeReward());
-            string referralCodeFilePath = Path.Combine(StoragePath, "VoteReward", "ReferralCodes.json");
-            _referralCodeManager = new ReferralCodeManager(referralCodeFilePath, _config.Data);
-            string EventCodeFilePath = Path.Combine(StoragePath, "VoteReward", "EventCodes.json");
-            _eventCodeManager = new EventCodeManager(EventCodeFilePath, _config.Data);
-            ApiHelper = new VoteApiHelper();
 
+            // Tworzenie katalogu i pliku "PlayerData.xml", jeśli nie istnieje
+            if (!_config.Data.UseDatabase)
+            {
+                InitializePlayerDataStorage();
+            }
+
+            //PostgresSQL
+            if (_config.Data.UseDatabase)
+            {
+                // Ciąg połączenia z ustawień konfiguracji
+                string connectionString = $"Host={_config.Data.DatabaseHost};Port={_config.Data.DatabasePort};Username={_config.Data.DatabaseUsername};Password={_config.Data.DatabasePassword};Database={_config.Data.DatabaseName};";
+                _databaseManager = new PostgresDatabaseManager(connectionString);
+                _databaseManager.InitializeDatabase();
+            }
+
+            // Tworzenie ścieżek plików tylko jeśli baza danych nie jest używana
+            string referralCodeFilePath = _config.Data.UseDatabase ? null : Path.Combine(StoragePath, "VoteReward", "ReferralCodes.json");
+            string eventCodeFilePath = _config.Data.UseDatabase ? null : Path.Combine(StoragePath, "VoteReward", "EventCodes.json");
+
+            // Inicjalizacja menedżerów zależnie od konfiguracji użycia bazy danych
+            _referralCodeManager = new ReferralCodeManager(referralCodeFilePath, _config.Data);
+            _eventCodeManager = new EventCodeManager(eventCodeFilePath, _config.Data);
+            ApiHelper = new VoteApiHelper();
 
             if (Application.Current != null)
             {
@@ -127,30 +155,9 @@ namespace VoteRewards
 
         private void OnPlayerJoined(IPlayer player)
         {
-            _playerTimeSpent[player.SteamId] = TimeSpan.Zero;
-
-            //ulong targetSteamId = 76561198209740952;
-
-            //// Sprawdź, czy dołączający gracz ma ten identyfikator Steam
-            //if (player.SteamId == targetSteamId)
-            //{
-            //    // Uruchomienie zadania asynchronicznego z opóźnieniem
-            //    Task.Run(async () =>
-            //    {
-            //        // Opóźnienie 10 minut (600000 milisekund)
-            //        await Task.Delay(600000);
-
-            //        // Użyj prefixu z konfiguracji pluginu
-            //        string funnyMessagePrefix = "Rebelski Dowódca";
-
-            //        // Treść wiadomości
-            //        string funnyMessage = "Ostrzeżenie! Wykryliśmy, że Twoje rebelianckie umiejętności w grach osiągnęły maksymalny poziom. Inni gracze mogą protestować! Zalecamy przejście na tryb 'ukryty rebeliant', aby uniknąć zbytniej popularności. Psst... nie zapomnij o kamuflażu – użyj kostiumu kurczaka!";
-
-            //        // Wysyłanie wiadomości do gracza z prefixem
-            //        ChatManager.SendMessageAsOther($"{funnyMessagePrefix}", funnyMessage, Color.Yellow, targetSteamId);
-            //    });
-            //}
+            _playerTimeSpent[player.SteamId] = new Dictionary<TimeReward, TimeSpan>();
         }
+
 
         private void OnPlayerLeft(IPlayer player)
         {
@@ -167,8 +174,12 @@ namespace VoteRewards
                     ConnectNexus();
 
                     _updatePlayerTimeSpentTimer = new Timer(UpdatePlayerTimeSpent, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
-                    //PlayerTimeTracker = new PlayerTimeTracker(_config.Data);
-                    
+
+                    if (_config.Data.PlayerTimeTracker)
+                    {
+                        PlayerTimeTracker = new PlayerTimeTracker();
+                    }
+
                     _multiplayerManager = session.Managers.GetManager<IMultiplayerManagerBase>();
                     if (_multiplayerManager == null)
                     {
@@ -179,68 +190,89 @@ namespace VoteRewards
                         LoggerHelper.DebugLog(Log, _config.Data, "Multiplayer manager initialized.");
                         _multiplayerManager.PlayerJoined += OnPlayerJoined;
                         _multiplayerManager.PlayerLeft += OnPlayerLeft;
-                        //_multiplayerManager.PlayerJoined += PlayerTimeTracker.OnPlayerJoined;
-                        //_multiplayerManager.PlayerLeft += PlayerTimeTracker.OnPlayerLeft;
+
+                        if (_config.Data.PlayerTimeTracker)
+                        {
+                            _multiplayerManager.PlayerJoined += PlayerTimeTracker.OnPlayerJoined;
+                            _multiplayerManager.PlayerLeft += PlayerTimeTracker.OnPlayerLeft;
+                        }
                     }
 
                     ItemLoader.LoadAvailableItemTypesAndSubtypes(AvailableItemTypes, AvailableItemSubtypes, Log, Config);
-                    _control.Dispatcher.Invoke(() => _control.UpdateButtonState(true));
+
+                    // Sprawdzenie systemu operacyjnego przed aktualizacją stanu przycisków
+                    if (Environment.OSVersion.Platform == PlatformID.Win32NT && _control != null)
+                    {
+                        _control.Dispatcher.Invoke(() => _control.UpdateButtonState(true));
+                    }
                     break;
 
                 case TorchSessionState.Unloading:
                     Log.Info("Session Unloading!");
 
-
-                    // Ustawienie menedżera na null podczas rozładowywania sesji
+                    // Sprawdzenie systemu operacyjnego przed aktualizacją stanu przycisków
+                    if (Environment.OSVersion.Platform == PlatformID.Win32NT && _control != null)
+                    {
+                        _control.Dispatcher.Invoke(() => _control.UpdateButtonState(false));
+                    }
                     _multiplayerManager = null;
-                    _control.Dispatcher.Invoke(() => _control.UpdateButtonState(false));
                     break;
             }
         }
+
 
         private void UpdatePlayerTimeSpent(object state)
         {
             try
             {
-                var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig, this.RefferalCodeReward);
+                var getRandomRewardsUtils = new GetRandomRewardsUtils(this.RewardItemsConfig, this.TimeSpentRewardsConfig, this.RefferalCodeReward, this.TopVotersBenefitConfig);
 
                 foreach (var player in MySession.Static.Players.GetOnlinePlayers())
                 {
                     var steamId = player.Id.SteamId;
                     if (!_playerTimeSpent.ContainsKey(steamId))
                     {
-                        _playerTimeSpent[steamId] = TimeSpan.Zero;
+                        _playerTimeSpent[steamId] = new Dictionary<TimeReward, TimeSpan>();
                     }
 
-                    _playerTimeSpent[steamId] += TimeSpan.FromMinutes(1);
-
-                    if (_playerTimeSpent[steamId].TotalMinutes >= this.TimeSpentRewardsConfig.RewardInterval)
+                    foreach (var timeReward in this.TimeSpentRewardsConfig.TimeRewards)
                     {
-                        List<RewardItem> rewards = getRandomRewardsUtils.GetRandomTimeSpentReward();
-                        rewards.RemoveAll(item => item == null);
-
-                        if (rewards.Any())
+                        if (!_playerTimeSpent[steamId].ContainsKey(timeReward))
                         {
-                            var successfulRewards = new List<string>();
+                            _playerTimeSpent[steamId][timeReward] = TimeSpan.Zero;
+                        }
 
-                            foreach (var rewardItem in rewards)
+                        _playerTimeSpent[steamId][timeReward] += TimeSpan.FromMinutes(1);
+
+                        if (_playerTimeSpent[steamId][timeReward].TotalMinutes >= timeReward.RewardInterval)
+                        {
+
+                            var rewardsToAward = getRandomRewardsUtils.GetRandomRewardsFromList(timeReward.RewardsList);
+
+                            if (rewardsToAward.Any())
                             {
-                                int randomAmount = getRandomRewardsUtils.GetRandomAmount(rewardItem.AmountOne, rewardItem.AmountTwo);
-                                bool awarded = PlayerRewardManager.AwardPlayer(steamId, rewardItem, randomAmount, Log, Config);
+                                var successfulRewards = new List<string>();
 
-                                if (awarded)
+                                foreach (var rewardItem in rewardsToAward)
                                 {
-                                    successfulRewards.Add($"{randomAmount}x {rewardItem.ItemSubtypeId}");
+                                    int randomAmount = getRandomRewardsUtils.GetRandomAmount(rewardItem.AmountOne, rewardItem.AmountTwo);
+                                    bool awarded = PlayerRewardManager.AwardPlayer(steamId, rewardItem, randomAmount, Log, Config);
+
+                                    if (awarded)
+                                    {
+                                        successfulRewards.Add($"{randomAmount}x {rewardItem.ItemSubtypeId}");
+                                    }
+                                }
+
+                                if (successfulRewards.Any())
+                                {
+                                    ChatManager.SendMessageAsOther(timeReward.NotificationPrefix, $"Congratulations! You have received:\n{string.Join("\n", successfulRewards)}", Color.Green, steamId);
                                 }
                             }
 
-                            if (successfulRewards.Any())
-                            {
-                                ChatManager.SendMessageAsOther(this.TimeSpentRewardsConfig.NotificationPrefixx, $"Congratulations! You have received:\n{string.Join("\n", successfulRewards)}", Color.Green, steamId);
-                            }
+                            // Resetowanie czasu dla tej konkretnej nagrody
+                            _playerTimeSpent[steamId][timeReward] = TimeSpan.Zero;
                         }
-
-                        _playerTimeSpent[steamId] = TimeSpan.Zero;
                     }
                 }
             }
@@ -335,6 +367,28 @@ namespace VoteRewards
             }
         }
 
+        private void InitializePlayerDataStorage()
+        {
+            string playerDataDirectory = Path.Combine(StoragePath, "VoteReward");
+            string playerDataFilePath = Path.Combine(playerDataDirectory, "PlayerData.xml");
+
+            if (!Directory.Exists(playerDataDirectory))
+            {
+                Directory.CreateDirectory(playerDataDirectory);
+            }
+
+            if (!File.Exists(playerDataFilePath))
+            {
+                XDocument doc = new XDocument(new XElement("Players"));
+                doc.Save(playerDataFilePath);
+                Log.Info("PlayerData.xml has been created.");
+            }
+            else
+            {
+                Log.Info("PlayerData.xml already exists.");
+            }
+        }
+
         public void Save()
         {
             try
@@ -344,6 +398,7 @@ namespace VoteRewards
                 _rewardItemsConfig.Save();
                 _refferalCodeReward.Save();
                 _eventCodeReward.Save();
+                _topVotersBenefitConfig.Save();
                 Log.Info("Configuration Saved.");
             }
             catch (IOException e)

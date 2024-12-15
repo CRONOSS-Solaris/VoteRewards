@@ -39,8 +39,8 @@ namespace VoteRewards
             try
             {
                 string newCode = EventCodeManager.CreateEventCode(maxUsageCount);
-                EventCode eventCode = new EventCode(newCode, maxUsageCount);
-                NexusManager.SendEventCodeCreateToAllServers(eventCode);
+
+                // Informacja dla gracza o utworzeniu kodu
                 VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", $"Event code created: {newCode}", Color.Green, Context.Player.SteamUserId);
             }
             catch (Exception ex)
@@ -49,6 +49,7 @@ namespace VoteRewards
                 VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "Failed to create event code.", Color.Red, Context.Player.SteamUserId);
             }
         }
+
 
         [Command("redeem", "Redeems an Event code.")]
         [Permission(MyPromoteLevel.None)]
@@ -94,7 +95,10 @@ namespace VoteRewards
 
                         if (rewardMessages.Any())
                         {
-                            NexusManager.SendRedeemEventCodeToAllServers(code, steamId);
+                            if (!VoteRewardsMain.Instance.Config.UseDatabase)
+                            {
+                                NexusManager.SendRedeemEventCodeToAllServers(code, steamId);
+                            }
                             VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.EventCodePrefix}", "You received:\n" + string.Join("\n", rewardMessages), Color.Green, Context.Player.SteamUserId);
                         }
                         else

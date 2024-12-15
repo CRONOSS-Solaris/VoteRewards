@@ -28,7 +28,7 @@
 
         <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Text="Event Code Reward Configuration" FontWeight="Bold" FontSize="16" Margin="5"/>
 
-        <DataGrid x:Name="RewardItemsDataGrid" Grid.Column="0" Grid.Row="1" AutoGenerateColumns="False" Margin="5" >
+        <DataGrid x:Name="RewardItemsDataGrid" Grid.Column="0" Grid.Row="1" CanUserAddRows="False" AutoGenerateColumns="False" Margin="5" >
             <DataGrid.Columns>
                 <DataGridTemplateColumn Header="Item Type ID">
                     <DataGridTemplateColumn.CellTemplate>

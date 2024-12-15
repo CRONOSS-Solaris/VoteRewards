@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using VoteRewards.Nexus;
 
 namespace VoteRewards.Utils
 {
@@ -22,29 +23,56 @@ namespace VoteRewards.Utils
         public string CreateEventCode(int? maxUsageCount = null)
         {
             var newCode = GenerateUniqueCode();
-            _eventCodes.Add(new EventCode(newCode, maxUsageCount));
+            var newEventCode = new EventCode(newCode, maxUsageCount);
+            if (!VoteRewardsMain.Instance.Config.UseDatabase)
+            {
+                NexusManager.SendEventCodeCreateToAllServers(newEventCode);
+            }
+            // Dodanie kodu do lokalnej listy
+            _eventCodes.Add(newEventCode);
+
+            // Zapisz kody zależnie od konfiguracji użycia bazy danych
             SaveEventCodes();
+
             return newCode;
         }
 
+
         private void LoadEventCodes()
         {
-            if (File.Exists(_filePath))
+            if (_config.UseDatabase)
             {
-                var json = File.ReadAllText(_filePath);
-                _eventCodes = JsonConvert.DeserializeObject<List<EventCode>>(json) ?? new List<EventCode>();
+                _eventCodes = VoteRewardsMain.Instance.DatabaseManager.LoadEventCodesAsync().Result;
             }
             else
             {
-                _eventCodes = new List<EventCode>();
+                if (File.Exists(_filePath))
+                {
+                    var json = File.ReadAllText(_filePath);
+                    _eventCodes = JsonConvert.DeserializeObject<List<EventCode>>(json) ?? new List<EventCode>();
+                }
+                else
+                {
+                    _eventCodes = new List<EventCode>();
+                }
             }
         }
 
         private void SaveEventCodes()
         {
-            var json = JsonConvert.SerializeObject(_eventCodes, Formatting.Indented);
-            File.WriteAllText(_filePath, json);
+            if (_config.UseDatabase)
+            {
+                // Zapisz do bazy danych
+                VoteRewardsMain.Instance.DatabaseManager.SaveEventCodesAsync(_eventCodes).Wait();
+            }
+            else
+            {
+                // Zapisz do pliku, jeśli baza danych nie jest używana
+                var json = JsonConvert.SerializeObject(_eventCodes, Formatting.Indented);
+                File.WriteAllText(_filePath, json);
+            }
         }
+
 
         private string GenerateUniqueCode()
         {
@@ -77,12 +105,18 @@ namespace VoteRewards.Utils
             if (eventCode != null && !eventCode.RedeemedBySteamIds.Contains(steamId))
             {
                 eventCode.RedeemedBySteamIds.Add(steamId);
+
+                // Zmniejsz max_usage_count jeśli jest określone
+                if (eventCode.MaxUsageCount.HasValue)
+                {
+                    eventCode.MaxUsageCount -= 1;
+                }
+
                 SaveEventCodes();
 
-                // Sprawdzamy, czy osiągnięto maksymalną liczbę użyć
-                if (eventCode.MaxUsageCount.HasValue && eventCode.RedeemedBySteamIds.Count >= eventCode.MaxUsageCount.Value)
+                // Usuwamy kod, jeśli osiągnięto limit użycia (max_usage_count == 0)
+                if (eventCode.MaxUsageCount.HasValue && eventCode.MaxUsageCount.Value <= 0)
                 {
-                    // Usuwamy kod, jeśli osiągnięto limit użycia
                     _eventCodes.Remove(eventCode);
                     SaveEventCodes();
                 }
@@ -92,6 +126,7 @@ namespace VoteRewards.Utils
 
             return false; // Kod nie może być wykorzystany
         }
+
 
         public void AddEventCode(EventCode newEventCode)
         {

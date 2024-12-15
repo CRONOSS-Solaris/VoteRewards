@@ -12,6 +12,7 @@ namespace VoteRewards
         private TimeSpentRewardsConfiguration _timeSpentRewardsConfigurationWindow;
         private ReferralItemConfiguration _referralItemConfiguration;
         private EventCodeItemConfiguration _eventCodeItemConfiguration;
+        private TopVotersBenefit _topVotersBenefit;
 
         private VoteRewardsControl()
         {
@@ -64,6 +65,38 @@ namespace VoteRewards
                 _itemConfigurationWindow.Dispatcher.Invoke(() =>
                 {
                     _itemConfigurationWindow.Activate();
+                });
+            }
+        }
+
+        private void OpenTopVotersBenefitButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Sprawdzamy, czy okno jest już otwarte
+            if (_topVotersBenefit == null)
+            {
+                // Tworzymy nowy wątek STA do otwarcia okna
+                Thread thread = new Thread(() =>
+                {
+                    _topVotersBenefit = new TopVotersBenefit(Plugin);
+                    _topVotersBenefit.Closed += (s, args) => _topVotersBenefit = null;
+                    _topVotersBenefit.Show();
+
+                    // Rozpoczynamy pętlę zdarzeń dla tego wątku
+                    System.Windows.Threading.Dispatcher.Run();
+                });
+
+                // Ustawiamy wątek jako STA
+                thread.SetApartmentState(ApartmentState.STA);
+
+                // Rozpoczynamy wątek
+                thread.Start();
+            }
+            else
+            {
+                // Jeśli okno jest już otwarte, przenosimy je na wierzch
+                _topVotersBenefit.Dispatcher.Invoke(() =>
+                {
+                    _topVotersBenefit.Activate();
                 });
             }
         }
@@ -162,6 +195,7 @@ namespace VoteRewards
             OpenItemConfigurationButton.IsEnabled = isEnabled;
             OpenTimeSpentRewardsConfigurationButton.IsEnabled = isEnabled;
             OpenReferralRewardConfig.IsEnabled = isEnabled;
+            OpenTopVotersBenefitConfigurationButton.IsEnabled = isEnabled;
             EventCodeRewardConfiguration.IsEnabled = isEnabled;
             ServerStatusMessage.Visibility = isEnabled ? Visibility.Collapsed : Visibility.Visible;
             ServerStatusMessage2.Visibility = isEnabled ? Visibility.Collapsed : Visibility.Visible;

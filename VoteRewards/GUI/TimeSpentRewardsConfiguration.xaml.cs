@@ -17,65 +17,71 @@ namespace VoteRewards
         {
             InitializeComponent();
             Plugin = plugin;
-
-            // Ustawiamy DataContext okna na plugin
             DataContext = plugin;
-
-            // Ustawiamy źródło danych DataGrid
-            TimeSpentRewardsDataGrid.ItemsSource = Plugin.TimeSpentRewardsConfig.RewardsList;
+            TimeSpentRewardsDataGrid.ItemsSource = Plugin.TimeSpentRewardsConfig.TimeRewards;
         }
 
-
-        private void AddTimeSpentRewardButton_OnClick(object sender, RoutedEventArgs e)
+        private void TimeSpentRewardsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Tworzymy nowy obiekt RewardItem i dodajemy go do listy
-            var newItem = new RewardItem();
-            Plugin.TimeSpentRewardsConfig.RewardsList.Add(newItem);
-
-            // Odświeżamy DataGrid
-            TimeSpentRewardsDataGrid.Items.Refresh();
+            var selectedRange = TimeSpentRewardsDataGrid.SelectedItem as TimeReward;
+            RewardItemsDataGrid.ItemsSource = selectedRange?.RewardsList;
         }
 
-        private void DeleteTimeSpentRewardButton_OnClick(object sender, RoutedEventArgs e)
+        private void AddVoteRangeButton_Click(object sender, RoutedEventArgs e)
         {
-            // Pobieramy aktualnie wybrany przedmiot
-            var selectedItem = TimeSpentRewardsDataGrid.SelectedItem as RewardItem;
+            var newRange = new TimeReward { NotificationPrefix = "Prefix", RewardInterval = 0, IsNexusSynced = false };
 
-            // Jeśli nic nie jest zaznaczone, nic nie robimy
-            if (selectedItem == null)
-                return;
-
-            // Usuwamy zaznaczony przedmiot z listy
-            Plugin.TimeSpentRewardsConfig.RewardsList.Remove(selectedItem);
-
-            // Odświeżamy DataGrid
-            TimeSpentRewardsDataGrid.Items.Refresh();
-        }
-
-        private void SaveButton_OnClick(object sender, RoutedEventArgs e)
-        {
-            // Aktualizacja konfiguracji wartościami z kontrolek
-            Plugin.TimeSpentRewardsConfig.RewardInterval = int.Parse(RewardIntervalTextBox.Text);
-            Plugin.TimeSpentRewardsConfig.NotificationPrefixx = NotificationPrefixTextBox.Text;
-
-            // Sprawdzanie każdego RewardItem w liście nagród
-            foreach (var item in Plugin.TimeSpentRewardsConfig.RewardsList)
+            newRange.RewardsList = new List<RewardItem>
             {
-                if (item.ChanceToDrop < 0.0 || item.ChanceToDrop > 100.0)
-                {
-                    // Wyświetlenie komunikatu o błędzie
-                    MessageBox.Show("Chance to Drop must be between 0.0 and 100.0", "Invalid Data", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return; // Przerywamy zapisywanie
-                }
+                new RewardItem()
+            };
+
+            Plugin.TimeSpentRewardsConfig.TimeRewards.Add(newRange);
+            TimeSpentRewardsDataGrid.Items.Refresh();
+        }
+
+        private void RemoveVoteRangeButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedRange = TimeSpentRewardsDataGrid.SelectedItem as TimeReward;
+            if (selectedRange != null)
+            {
+                Plugin.TimeSpentRewardsConfig.TimeRewards.Remove(selectedRange);
+                TimeSpentRewardsDataGrid.Items.Refresh();
+                RewardItemsDataGrid.ItemsSource = null;
+            }
+        }
+
+        private void AddRewardButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedRange = TimeSpentRewardsDataGrid.SelectedItem as TimeReward;
+            if (selectedRange == null)
+            {
+                MessageBox.Show("Please select");
+                return;
             }
 
-            NexusManager.SendTimeSpentRewardsConfigUpdate(Plugin.TimeSpentRewardsConfig);
+            if (selectedRange.RewardsList == null)
+            {
+                selectedRange.RewardsList = new List<RewardItem>();
+            }
 
-            Plugin.Save();
-            this.Close();
+            var newItem = new RewardItem();
+            selectedRange.RewardsList.Add(newItem);
+
+            RewardItemsDataGrid.Items.Refresh();
         }
 
 
+        private void RemoveRewardButton_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedRange = TimeSpentRewardsDataGrid.SelectedItem as TimeReward;
+            var selectedReward = RewardItemsDataGrid.SelectedItem as RewardItem;
+            if (selectedRange != null && selectedReward != null)
+            {
+                selectedRange.RewardsList.Remove(selectedReward);
+                RewardItemsDataGrid.Items.Refresh();
+            }
+        }
 
         private void ItemTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -158,5 +164,12 @@ namespace VoteRewards
             return null;
         }
 
+        private void SaveVoteRanges_Click(object sender, RoutedEventArgs e)
+        {
+            NexusManager.SendTimeSpentRewardsConfigUpdate(Plugin.TimeSpentRewardsConfig);
+            Plugin.Save();
+            MessageBox.Show("Saved successfully!");
+        }
     }
+
 }

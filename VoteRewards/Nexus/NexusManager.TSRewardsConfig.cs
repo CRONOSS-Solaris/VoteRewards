@@ -1,6 +1,7 @@
 ﻿using Nexus.API;
 using Sandbox.ModAPI;
 using System;
+using System.Linq;
 using VoteRewards.Config;
 using VoteRewards.Utils;
 
@@ -17,13 +18,19 @@ namespace VoteRewards.Nexus
                 return;
             }
 
+            // Filtrowanie nagród czasowych, aby wysłać tylko te z IsNexusSynced == true
+            var filteredConfig = new TimeSpentRewardsConfig
+            {
+                TimeRewards = config.TimeRewards.Where(tr => tr.IsNexusSynced).ToList()
+            };
+
             foreach (var server in servers)
             {
                 if (server.ServerID != ThisServer?.ServerID)
                 {
                     try
                     {
-                        SendTimeSpentRewardsConfigToServer(server.ServerID, config);
+                        SendTimeSpentRewardsConfigToServer(server.ServerID, filteredConfig);
                         LoggerHelper.DebugLog(Log, Config, $"SendTimeSpentRewardsConfigUpdate: Configuration sent to server with ID: {server.ServerID}");
                     }
                     catch (Exception ex)

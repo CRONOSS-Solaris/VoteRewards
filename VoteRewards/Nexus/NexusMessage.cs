@@ -20,6 +20,8 @@ namespace VoteRewards.Nexus
             EventCodeCreate,
             RedeemEventCode,
             PlayerTimeTracker,
+            TopVotersBenefitConfig,
+            PlayerRewardTracker
             // ...
         }
 
@@ -81,6 +83,11 @@ namespace VoteRewards.Nexus
                 ConfigData = data;
                 Data = new byte[0];
             }
+            else if (messageType == MessageType.TopVotersBenefitConfig)
+            {
+                ConfigData = data;
+                Data = new byte[0];
+            }
             else if (messageType == MessageType.RefferalCodeCreate)
             {
                 Data = data;
@@ -107,6 +114,11 @@ namespace VoteRewards.Nexus
                 ConfigData = new byte[0];
             }
             else if (messageType == MessageType.PlayerTimeTracker)
+            {
+                Data = data;
+                ConfigData = new byte[0];
+            }
+            else if (messageType == MessageType.PlayerRewardTracker)
             {
                 Data = data;
                 ConfigData = new byte[0];

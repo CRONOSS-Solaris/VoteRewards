@@ -1,4 +1,5 @@
-﻿using Torch;
+﻿using System.Collections.Generic;
+using Torch;
 using Torch.API.Plugins;
 using VoteRewards.Config;
 using VoteRewards.Nexus;
@@ -27,6 +28,13 @@ namespace VoteRewards
             _config.Data.IsEventCodeEnabled = newConfig.IsEventCodeEnabled;
             _config.Data.EventCodePrefix = newConfig.EventCodePrefix;
             _config.Data.ReferralCodeUsageTimeLimit = newConfig.ReferralCodeUsageTimeLimit;
+            _config.Data.UseDatabase = newConfig.UseDatabase;
+            _config.Data.DatabaseHost = newConfig.DatabaseHost;
+            _config.Data.DatabasePort = newConfig.DatabasePort;
+            _config.Data.DatabasePassword = newConfig.DatabasePassword;
+            _config.Data.DatabaseName = newConfig.DatabaseName;
+            _config.Data.DatabaseUsername = newConfig.DatabaseUsername;
+            _config.Data.PlayerTimeTracker = newConfig.PlayerTimeTracker;
 
             _config.Save();
 
@@ -45,11 +53,7 @@ namespace VoteRewards
                 return;
             }
 
-            // Aktualizacja wartości konfiguracji
-            _timeSpentRewardsConfig.Data.RewardInterval = newConfig.RewardInterval;
-            _timeSpentRewardsConfig.Data.RewardsList = newConfig.RewardsList;
-            _timeSpentRewardsConfig.Data.NotificationPrefixx = newConfig.NotificationPrefixx;
-
+            _timeSpentRewardsConfig.Data.TimeRewards = newConfig.TimeRewards;
 
             _timeSpentRewardsConfig.Save();
         }
@@ -97,6 +101,21 @@ namespace VoteRewards
 
 
             _eventCodeReward.Save();
+        }
+
+        public void UpdateTopVotersBenefit(TopVotersBenefitConfig newConfig)
+        {
+            if (_topVotersBenefitConfig?.Data == null)
+            {
+                Log.Warn("TopVotersBenefit is not initialized.");
+                return;
+            }
+
+            // Aktualizacja wartości konfiguracji
+            _topVotersBenefitConfig.Data.VoteRangeRewards = newConfig.VoteRangeRewards;
+
+
+            _topVotersBenefitConfig.Save();
         }
     }
 }

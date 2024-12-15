@@ -1,9 +1,16 @@
+using Newtonsoft.Json;
 using Sandbox.Game;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using Torch.API.Managers;
 using Torch.Commands;
 using Torch.Commands.Permissions;
+using Torch.Mod.Messages;
+using Torch.Mod;
+using VoteRewards.Nexus;
 using VoteRewards.Utils;
 using VRage.Game.ModAPI;
 using VRageMath;
@@ -16,22 +23,52 @@ namespace VoteRewards
 
         public VoteRewardsMain Plugin => (VoteRewardsMain)Context.Plugin;
 
-        [Command("vote", "Directs the player to the voting page.")]
+        [Command("votehelp", "Shows help for commands available to you.")]
         [Permission(MyPromoteLevel.None)]
-        public void VoteCommand()
+        public void Help()
         {
-            string voteUrl = Plugin.Config.VotingLink;
+            var commandManager = Context.Torch.CurrentSession?.Managers.GetManager<CommandManager>();
+            if (commandManager == null)
+            {
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Must have an attached session to list commands", Color.Red, Context.Player.SteamUserId);
+                return;
+            }
 
-            // Pobranie Steam ID gracza, który wydał komendę
-            ulong steamId = Context.Player.SteamUserId;
+            StringBuilder sb = new StringBuilder();
+            var playerPromoteLevel = Context.Player?.PromoteLevel ?? MyPromoteLevel.None;
 
-            // Przygotuj URL z linkfilter Steam do przekierowania na stronę do głosowania
-            string steamOverlayUrl = $"https://steamcommunity.com/linkfilter/?url={voteUrl}";
+            // Pobieranie komend i grupowanie ich według wymaganej rangi
+            var groupedCommands = commandManager.Commands.WalkTree()
+                .Where(command => command.IsCommand && command.Command.Plugin == this.Plugin && command.Command.MinimumPromoteLevel <= playerPromoteLevel)
+                .GroupBy(command => command.Command.MinimumPromoteLevel)
+                .OrderBy(group => group.Key); // Sortowanie grup według rangi
 
-            // Otwarcie Steam Overlay z URL do głosowania
-            MyVisualScriptLogicProvider.OpenSteamOverlay(steamOverlayUrl, Context.Player.Identity.IdentityId);
+            // Iterowanie przez każdą grupę i dodanie jej do StringBuildera
+            foreach (var group in groupedCommands)
+            {
+                var rankName = Enum.GetName(typeof(MyPromoteLevel), group.Key) ?? "None";
+                sb.AppendLine($"Rank: {rankName}");
+                sb.AppendLine(new string('-', 20)); // Linia oddzielająca dla czytelności
 
-            VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Please vote for us at: {voteUrl}", Color.Green, Context.Player.SteamUserId);
+                foreach (var command in group.OrderBy(c => c.Command.SyntaxHelp)) // Sortowanie komend w grupie
+                {
+                    sb.AppendLine($"{command.Command.SyntaxHelp}\n    {command.Command.HelpText}\n");
+                }
+
+                sb.AppendLine(); // Pusta linia między grupami
+            }
+
+            // Sprawdzanie, czy istnieją dostępne komendy
+            if (sb.Length > 0)
+            {
+                string message = sb.ToString().TrimEnd();
+                var dialogMessage = new DialogMessage("VoteReward Help", "Available commands:", message);
+                ModCommunication.SendMessageTo(dialogMessage, Context.Player.SteamUserId);
+            }
+            else
+            {
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "No commands available for your permission level.", Color.Red, Context.Player.SteamUserId);
+            }
         }
 
         [Command("votelink", "Directs the player to the voting page.")]
@@ -52,6 +89,92 @@ namespace VoteRewards
             VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Please vote for us at: {voteUrl}", Color.Green, Context.Player.SteamUserId);
         }
 
+        [Command("topreward", "Allows the player to claim their top voter reward.")]
+        [Permission(MyPromoteLevel.None)]
+        public async void TopRewardCommand()
+        {
+            var steamId = Context.Player.SteamUserId.ToString();
+            var identityId = Context.Player.IdentityId;
+
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig, Plugin.RefferalCodeReward, Plugin.TopVotersBenefitConfig);
+
+            PlayerRewardTracker rewardTracker = new PlayerRewardTracker(Path.Combine(VoteRewardsMain.Instance.StoragePath, "VoteReward", "PlayerData.xml"));
+
+            // Sprawdzanie ostatniej daty odbioru nagrody
+            var lastClaimDate = await rewardTracker.GetLastRewardClaimDate(Context.Player.SteamUserId);
+            if (lastClaimDate.HasValue)
+            {
+                var lastClaimMonth = new DateTime(lastClaimDate.Value.Year, lastClaimDate.Value.Month, 1);
+                var currentMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+
+                if (lastClaimMonth >= currentMonth)
+                {
+                    var nextClaimMonth = currentMonth.AddMonths(1);
+                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"You can only claim the top voter reward once a month. You can claim your next reward on {nextClaimMonth:dd/MM/yyyy}.", Color.Green, Context.Player.SteamUserId);
+                    return;
+                }
+            }
+
+            // Pobieranie liczby głosów dla gracza
+            string topVotersResponse = await Plugin.ApiHelper.GetTopVotersBySteamIdAsync();
+            var voterResponse = JsonConvert.DeserializeObject<VoterResponse>(topVotersResponse);
+            var playerVotes = voterResponse?.Voters?.Find(v => v.Nickname == Context.Player.DisplayName)?.Votes ?? 0;
+
+            List<string> messages = new List<string> { $"{Plugin.Config.NotificationPrefix}" };
+
+            bool rewardGrantedFlag = false;
+            // Znajdowanie odpowiedniego zakresu głosów i przyznawanie nagród
+            foreach (var voteRangeReward in Plugin.TopVotersBenefitConfig.VoteRangeRewards)
+            {
+                if (playerVotes >= voteRangeReward.MinVotes && playerVotes <= voteRangeReward.MaxVotes)
+                {
+                    var successfulTopRewards = new List<string>();
+
+                    foreach (var reward in voteRangeReward.Rewards)
+                    {
+                        int randomAmount = getRandomRewardsUtils.GetRandomAmount(reward.AmountOne, reward.AmountTwo);
+                        bool rewardGranted = PlayerRewardManager.AwardPlayer(ulong.Parse(steamId), reward, randomAmount, VoteRewardsMain.Log, Plugin.Config);
+                        if (rewardGranted)
+                        {
+                            successfulTopRewards.Add($"{randomAmount}x {reward.ItemSubtypeId}");
+                            VoteRewardsMain.Log.Info($"Player {steamId} received {randomAmount} of {reward.ItemSubtypeId}.");
+                            rewardGrantedFlag = true;
+                        }
+                    }
+
+                    if (successfulTopRewards.Any())
+                    {
+                        messages.Add($"You have {playerVotes} votes and have received the following rewards:");
+                        messages.AddRange(successfulTopRewards.Select(reward => $"{reward}"));
+                        // Aktualizacja daty ostatniego odbioru nagrody
+                        rewardTracker.UpdateLastRewardClaimDate(Context.Player.SteamUserId, DateTime.UtcNow);
+
+                        if (!VoteRewardsMain.Instance.Config.UseDatabase)
+                        {
+                            // Tylko wtedy wysyłaj dane przez NexusManager, gdy nie korzystamy z bazy danych
+                            NexusManager.SendPlayerRewardTrackerToAllServers(Context.Player.SteamUserId, DateTime.UtcNow);
+                        }
+                    }
+                    break;
+                }
+            }
+
+            if (!rewardGrantedFlag)
+            {
+                messages.Add($"You have {playerVotes} votes but did not reach the vote threshold for a reward.");
+                if (playerVotes > 0)
+                {
+                    messages.Add("Keep voting to earn more rewards!");
+                }
+                else
+                {
+                    messages.Add("Start voting to earn great rewards!");
+                }
+            }
+
+            VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
+        }
+
         [Command("reward", "Allows the player to claim their vote reward.")]
         [Permission(MyPromoteLevel.None)]
         public async void ClaimRewardCommand()
@@ -59,40 +182,27 @@ namespace VoteRewards
             var steamId = Context.Player.SteamUserId;
             var identityId = Context.Player.IdentityId;
 
-            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig, Plugin.RefferalCodeReward);
+            var getRandomRewardsUtils = new GetRandomRewardsUtils(Plugin.RewardItemsConfig, Plugin.TimeSpentRewardsConfig, Plugin.RefferalCodeReward, Plugin.TopVotersBenefitConfig);
 
-            int voteStatus;
             try
             {
-                voteStatus = await Plugin.ApiHelper.CheckVoteStatusAsync(steamId.ToString());
-            }
-            catch (Exception ex)
-            {
-                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to check your vote status. Please try again later.", Color.Green, Context.Player.SteamUserId);
-                VoteRewardsMain.Log.Warn("Failed to check the vote status: " + ex.Message);
-                return;
-            }
+                int voteStatus = await Plugin.ApiHelper.CheckVoteStatusAsync(steamId.ToString());
+                List<string> messages = new List<string> { $"{Plugin.Config.NotificationPrefix}" };
 
-            List<string> messages = new List<string> { $"{Plugin.Config.NotificationPrefix}" }; // Add prefix as the first message
+                switch (voteStatus)
+                {
+                    case -1:
+                        messages.Add("Failed to check your vote status. Please try again later.");
+                        break;
+                    case 0:
+                        messages.Add("You have not voted yet. Please vote first.");
+                        break;
+                    case 1:
+                        List<RewardItem> rewards = getRandomRewardsUtils.GetRandomRewards();
+                        rewards.RemoveAll(item => item == null);
 
-            switch (voteStatus)
-            {
-                case -1:
-                    messages.Add("Failed to check your vote status. Please try again later.");
-                    break;
-                case 0:
-                    messages.Add("You have not voted yet. Please vote first.");
-                    break;
-                case 1:
-                    List<RewardItem> rewards = getRandomRewardsUtils.GetRandomRewards();
-                    rewards.RemoveAll(item => item == null);
-
-                    if (rewards.Any())
-                    {
-                        try
+                        if (rewards.Any())
                         {
-                            await Plugin.ApiHelper.SetVoteAsClaimedAsync(steamId);
-
                             var successfulRewards = new List<string>();
 
                             foreach (var reward in rewards)
@@ -113,81 +223,116 @@ namespace VoteRewards
                             if (successfulRewards.Any())
                             {
                                 messages.Add("You received:");
-                                messages.AddRange(successfulRewards.Select(reward => $"{reward}"));
+                                messages.AddRange(successfulRewards);
                                 messages.Add("Thank you for voting!");
+                                await Plugin.ApiHelper.SetVoteAsClaimedAsync(steamId);
                             }
                             else
                             {
                                 messages.Add("Your inventory is full. Please make space to receive your reward.");
                             }
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            messages.Add("Failed to claim the reward. Please try again later.");
-                            VoteRewardsMain.Log.Warn("Failed to claim the reward: " + ex.Message);
+                            messages.Add("No reward available at the moment. Please try again later.");
+                            VoteRewardsMain.Log.Warn("No reward item found for player " + steamId);
                         }
-                    }
-                    else
-                    {
-                        messages.Add("No reward available at the moment. Please try again later.");
-                        VoteRewardsMain.Log.Warn("No reward item found for player " + steamId);
-                    }
-                    break;
-                case 2:
-                    messages.Add("You have already claimed your vote reward.");
-                    break;
-            }
+                        break;
+                    case 2:
+                        messages.Add("You have already claimed your vote reward.");
+                        break;
+                }
 
-            VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
+                VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
+            }
+            catch (Exception ex)
+            {
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "We encountered an error processing your request. Please try again later.", Color.Red, Context.Player.SteamUserId);
+                VoteRewardsMain.Log.Warn($"Reward command failed for {steamId}: {ex.Message}");
+            }
         }
 
-        //[Command("subtracttime", "Subtracts time from a player's total playtime.")]
-        //[Permission(MyPromoteLevel.Admin)]
-        //public void SubtractTimeCommand(string playerIdentifier, int minutes)
-        //{
-        //    ulong steamId;
-        //    if (!ulong.TryParse(playerIdentifier, out steamId))
-        //    {
-        //        // Jeśli nie jest to SteamID, spróbuj znaleźć gracza po NickName
-        //        var player = Plugin.PlayerTimeTracker.FindPlayerByNickName(playerIdentifier);
-        //        if (player.HasValue)
-        //        {
-        //            steamId = player.Value.Item1;
-        //        }
-        //        else
-        //        {
-        //            Context.Respond($"Player with NickName '{playerIdentifier}' not found.");
-        //            return;
-        //        }
-        //    }
+        [Command("topvoters", "Shows top 10 voters of the month.")]
+        [Permission(MyPromoteLevel.None)]
+        public async void TopVotersCommand()
+        {
+            try
+            {
+                string responseContent = await Plugin.ApiHelper.GetTopVotersAsync();
+                if (responseContent.StartsWith("Error:"))
+                {
+                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", responseContent, Color.Red, Context.Player.SteamUserId);
+                    return;
+                }
 
-        //    TimeSpan timeToSubtract = TimeSpan.FromMinutes(minutes);
-        //    Plugin.PlayerTimeTracker.SubtractPlayerTime(steamId, timeToSubtract);
-        //    Context.Respond($"Subtracted {minutes} minutes from player's (SteamID: {steamId}) playtime.");
-        //}
+                var voterResponse = JsonConvert.DeserializeObject<VoterResponse>(responseContent);
+                if (voterResponse?.Voters == null || voterResponse.Voters.Count == 0)
+                {
+                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "No voters data available.", Color.Red, Context.Player.SteamUserId);
+                    return;
+                }
 
-        //[Command("topplaytime", "Shows top 5 players with the most time spent on the server.")]
-        //[Permission(MyPromoteLevel.None)]
-        //public void ShowTopPlayersCommand()
-        //{
-        //    var topPlayers = Plugin.PlayerTimeTracker.GetTopPlayers(5);
-        //    if (topPlayers.Count == 0)
-        //    {
-        //        VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", "No player data available.", Color.Red, Context.Player.SteamUserId);
-        //        return;
-        //    }
+                string message = "Top 10 Voters:\n" + string.Join("\n", voterResponse.Voters.Select((voter, index) => $"{index + 1}. {voter.Nickname} - {voter.Votes} votes"));
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", message, Color.Green, Context.Player.SteamUserId);
+            }
+            catch (Exception ex)
+            {
+                VoteRewardsMain.Log.Warn("Failed to get top voters: " + ex.Message);
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "Failed to retrieve top voters. Please try again later.", Color.Red, Context.Player.SteamUserId);
+            }
+        }
 
-        //    string response = "Top 5 players by time spent on the server:\n";
-        //    int rank = 1;
-        //    foreach (var player in topPlayers)
-        //    {
-        //        var totalMinutes = (long)player.TotalTimeSpent.TotalMinutes;
-        //        response += $"{rank}. {player.NickName}: {totalMinutes} minutes\n";
-        //        rank++;
-        //    }
+        [Command("subtracttime", "Subtracts time from a player's total playtime.")]
+        [Permission(MyPromoteLevel.Admin)]
+        public void SubtractTimeCommand(string playerIdentifier, int minutes)
+        {
+            ulong steamId;
+            if (!ulong.TryParse(playerIdentifier, out steamId))
+            {
+                // Jeśli nie jest to SteamID, spróbuj znaleźć gracza po NickName
+                var player = Plugin.PlayerTimeTracker.FindPlayerByNickName(playerIdentifier);
+                if (player.HasValue)
+                {
+                    steamId = player.Value.Item1;
+                }
+                else
+                {
+                    VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Player with NickName '{playerIdentifier}' not found.", Color.Red, Context.Player.SteamUserId);
+                    return;
+                }
+            }
 
-        //    VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", response, Color.Green, Context.Player.SteamUserId);
-        //}
+            TimeSpan timeToSubtract = TimeSpan.FromMinutes(minutes);
+            Plugin.PlayerTimeTracker.SubtractPlayerTime(steamId, timeToSubtract);
+            VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", $"Subtracted {minutes} minutes from player's (SteamID: {steamId}) playtime.", Color.Red, Context.Player.SteamUserId);
+        }
 
+        [Command("topplaytime", "Shows top 5 players with the most time spent on the server.")]
+        [Permission(MyPromoteLevel.None)]
+        public void ShowTopPlayersCommand()
+        {
+            if (!Plugin.Config.PlayerTimeTracker)
+            {
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.ReferralCodePrefix}", "Player Time Tracker function is disabled", Color.Red, Context.Player.SteamUserId);
+                return;
+            }
+            var topPlayers = Plugin.PlayerTimeTracker.GetTopPlayers(5);
+            if (topPlayers.Count == 0)
+            {
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", "No player data available.", Color.Red, Context.Player.SteamUserId);
+                return;
+            }
+
+            string response = "Top 5 players by time spent on the server:\n";
+            int rank = 1;
+            foreach (var player in topPlayers)
+            {
+                var totalMinutes = (long)player.TotalTimeSpent.TotalMinutes;
+                response += $"{rank}. {player.NickName}: {totalMinutes} minutes\n";
+                rank++;
+            }
+
+            VoteRewardsMain.ChatManager.SendMessageAsOther($"Top Play Time", response, Color.Green, Context.Player.SteamUserId);
+        }
     }
 }
