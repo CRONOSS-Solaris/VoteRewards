@@ -37,16 +37,28 @@ namespace VoteRewards
             StringBuilder sb = new StringBuilder();
             var playerPromoteLevel = Context.Player?.PromoteLevel ?? MyPromoteLevel.None;
 
-            // Iterate over all commands and add them to the StringBuilder if they are from this plugin and the player has the required permissions.
-            foreach (CommandTree.CommandNode command in commandManager.Commands.WalkTree())
+            // Pobieranie komend i grupowanie ich według wymaganej rangi
+            var groupedCommands = commandManager.Commands.WalkTree()
+                .Where(command => command.IsCommand && command.Command.Plugin == this.Plugin && command.Command.MinimumPromoteLevel <= playerPromoteLevel)
+                .GroupBy(command => command.Command.MinimumPromoteLevel)
+                .OrderBy(group => group.Key); // Sortowanie grup według rangi
+
+            // Iterowanie przez każdą grupę i dodanie jej do StringBuildera
+            foreach (var group in groupedCommands)
             {
-                if (command.IsCommand && command.Command.Plugin == this.Plugin && command.Command.MinimumPromoteLevel <= playerPromoteLevel)
+                var rankName = Enum.GetName(typeof(MyPromoteLevel), group.Key) ?? "None";
+                sb.AppendLine($"Rank: {rankName}");
+                sb.AppendLine(new string('-', 20)); // Linia oddzielająca dla czytelności
+
+                foreach (var command in group.OrderBy(c => c.Command.SyntaxHelp)) // Sortowanie komend w grupie
                 {
                     sb.AppendLine($"{command.Command.SyntaxHelp}\n    {command.Command.HelpText}\n");
                 }
+
+                sb.AppendLine(); // Pusta linia między grupami
             }
 
-            // Check if there were any commands to list, then send them using ModCommunication to display as MOTD in dialog.
+            // Sprawdzanie, czy istnieją dostępne komendy
             if (sb.Length > 0)
             {
                 string message = sb.ToString().TrimEnd();
