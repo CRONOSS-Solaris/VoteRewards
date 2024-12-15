@@ -50,7 +50,7 @@ namespace VoteRewards
             if (sb.Length > 0)
             {
                 string message = sb.ToString().TrimEnd();
-                var dialogMessage = new DialogMessage("Event System Help", "Available commands:", message);
+                var dialogMessage = new DialogMessage("VoteReward Help", "Available commands:", message);
                 ModCommunication.SendMessageTo(dialogMessage, Context.Player.SteamUserId);
             }
             else
