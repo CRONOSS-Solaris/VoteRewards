@@ -29,12 +29,12 @@ namespace VoteRewards.Utils
                 catch (HttpRequestException e)
                 {
                     Log.Warn("API(): Network error while contacting the API: " + e.Message);
-                    return -1;
+                    return -1; // Network issue
                 }
                 catch (Exception e)
                 {
                     Log.Error("API(): Unexpected error while contacting the API: " + e.Message);
-                    return -1;
+                    return -1; // General API error
                 }
 
                 string responseContent = await response.Content.ReadAsStringAsync();
@@ -43,19 +43,19 @@ namespace VoteRewards.Utils
                 if (!response.IsSuccessStatusCode)
                 {
                     Log.Warn($"API(): Unsuccessful API response: {response.StatusCode}");
-                    return -1;
+                    return -1; // Server returned an error
                 }
 
                 if (responseContent.Contains("Error"))
                 {
-                    Log.Warn($"API responded with an error: {responseContent}");
-                    return -1;
+                    Log.Warn($"API(): API responded with an error: {responseContent}");
+                    return -1; // API-specific error
                 }
 
                 if (!int.TryParse(responseContent, out int voteStatus))
                 {
-                    Log.Warn("Failed to parse API response");
-                    return -1;
+                    Log.Warn("API(): Failed to parse API response");
+                    return -1; // Parsing issue
                 }
 
                 return voteStatus;

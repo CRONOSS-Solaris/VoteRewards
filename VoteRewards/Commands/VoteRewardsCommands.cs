@@ -14,6 +14,7 @@ using VoteRewards.Nexus;
 using VoteRewards.Utils;
 using VRage.Game.ModAPI;
 using VRageMath;
+using System.Net.Http;
 
 
 namespace VoteRewards
@@ -192,10 +193,10 @@ namespace VoteRewards
                 switch (voteStatus)
                 {
                     case -1:
-                        messages.Add("Failed to check your vote status. Please try again later.");
+                        messages.Add("We couldn't verify your vote status due to a network issue or an error on the server. Please try again in 1-2 minutes.");
                         break;
                     case 0:
-                        messages.Add("You have not voted yet. Please vote first.");
+                        messages.Add("You have not voted yet. Please visit the voting site and try again.");
                         break;
                     case 1:
                         List<RewardItem> rewards = getRandomRewardsUtils.GetRandomRewards();
@@ -245,10 +246,15 @@ namespace VoteRewards
 
                 VoteRewardsMain.ChatManager.SendMessageAsOther(messages.First(), string.Join("\n", messages.Skip(1)), Color.Green, Context.Player.SteamUserId);
             }
+            catch (HttpRequestException)
+            {
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "We encountered a network issue while checking your vote status. Please try again in 1-2 minutes.", Color.Red, Context.Player.SteamUserId);
+                VoteRewardsMain.Log.Warn($"Network issue while processing reward command for {steamId}.");
+            }
             catch (Exception ex)
             {
-                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "We encountered an error processing your request. Please try again later.", Color.Red, Context.Player.SteamUserId);
-                VoteRewardsMain.Log.Warn($"Reward command failed for {steamId}: {ex.Message}");
+                VoteRewardsMain.ChatManager.SendMessageAsOther($"{Plugin.Config.NotificationPrefix}", "An unexpected error occurred. Please try again later. If the issue persists, contact support.", Color.Red, Context.Player.SteamUserId);
+                VoteRewardsMain.Log.Warn($"Unexpected error in reward command for {steamId}: {ex.Message}");
             }
         }
 
